@@ -1,0 +1,89 @@
+[
+  {
+    "id": "small-clinic",
+    "mode": "greenfield",
+    "prompt": "Design appointment booking for one clinic with two developers, one location, about 300 appointments per day, and an existing relational database. Receptionists and patients can book or cancel. Avoid double booking. The team can operate one web service and database. Recommend an initial architecture and explain when you would change it.",
+    "criteria": [
+      {"id": "fit", "critical": true, "expect": "Proposes a simple deployable design, such as a modular monolith, and ties components to the stated workload and team."},
+      {"id": "invariant", "critical": true, "expect": "Names a real concurrency mechanism: an applicable database constraint, serializable transaction with retry, or a lock target used by every writer. Explains why a lock row exists or how it is created race-safely, including for an empty schedule."},
+      {"id": "tradeoff", "critical": false, "expect": "Explains operational cost of adding services, queues, or caches and gives a measurable trigger for later change."},
+      {"id": "recovery", "critical": false, "expect": "Covers backup/restore and a minimal observability or failure response for the booking journey."}
+    ],
+    "red_flags": ["Claims microservices or Kafka are required at the stated scale", "Assumes an in-memory lock is enough to prevent concurrent double booking", "Assumes a read-then-insert transaction alone prevents overlapping bookings"]
+  },
+  {
+    "id": "partial-repository",
+    "mode": "repository-review",
+    "prompt": "Review the small repository at {{FIXTURE_DIR}}. Does it already use PostgreSQL and Kafka for orders? Identify the current architecture, the most important risks, and a proportionate next step. Cite file paths and symbols. Do not modify the fixture.",
+    "criteria": [
+      {"id": "evidence", "critical": true, "expect": "Separates README aspirations from executable code and cites exact files or symbols."},
+      {"id": "no-invention", "critical": true, "expect": "Does not claim PostgreSQL, Kafka, durable persistence, or authentication is implemented without evidence."},
+      {"id": "risk", "critical": false, "expect": "Identifies in-memory state loss and missing authorization or request validation with user impact."},
+      {"id": "next-step", "critical": false, "expect": "Recommends a modest, testable improvement before distributed infrastructure."}
+    ],
+    "red_flags": ["Repeats the README roadmap as current architecture", "Invents a database schema or deployment configuration"]
+  },
+  {
+    "id": "payment-queue",
+    "mode": "distributed-workflow",
+    "prompt": "An order service writes an order to PostgreSQL and asks a queue worker to charge a payment provider. The queue may redeliver messages. The provider sometimes times out after accepting a charge. Product asks for exactly-once charges. Design the flow and state what guarantee you can actually make.",
+    "criteria": [
+      {"id": "guarantee", "critical": true, "expect": "Rejects an unsupported end-to-end exactly-once claim and names the ambiguous timeout outcome."},
+      {"id": "idempotency", "critical": true, "expect": "Uses a stable business idempotency key with provider semantics and local deduplication or reconciliation."},
+      {"id": "handoff", "critical": true, "expect": "Addresses DB-to-queue dual-write failure with a transactional outbox or an equivalent justified design."},
+      {"id": "operations", "critical": false, "expect": "Defines retry bounds, poison-message handling, monitoring and operator reconciliation."}
+    ],
+    "red_flags": ["Says a queue alone guarantees exactly-once payment", "Retries an ambiguous charge with a new key"]
+  },
+  {
+    "id": "unknown-global-scale",
+    "mode": "greenfield",
+    "prompt": "Design a global notifications service. We do not yet know users, daily volume, peak factor, delivery channels, latency targets, or budget. Make progress without pretending these values are known. Show which answers would change the architecture.",
+    "criteria": [
+      {"id": "unknowns", "critical": true, "expect": "Labels missing requirements and asks only high-impact questions or states reversible assumptions."},
+      {"id": "no-false-numbers", "critical": true, "expect": "Does not state fabricated traffic, latency, or availability targets as requirements."},
+      {"id": "decision-sensitivity", "critical": false, "expect": "Shows which workload, channel, geography, or delivery guarantee changes the choice of architecture."},
+      {"id": "initial-design", "critical": false, "expect": "Offers a bounded initial design with failure and cost considerations, not a speculative global topology."}
+    ],
+    "red_flags": ["Invents 99.99% availability or a fixed RPS as user requirements", "Assumes active-active multi-region is automatically needed"]
+  },
+  {
+    "id": "tenant-agent",
+    "mode": "ai-agent-security",
+    "prompt": "A SaaS support agent reads customer tickets and can update CRM contacts for many tenant organizations. Tickets and retrieved documents may contain instructions to the AI. Design authorization, approval, recovery, and evaluation for this feature.",
+    "criteria": [
+      {"id": "tenant-auth", "critical": true, "expect": "Checks tenant membership and per-contact action authorization in deterministic code at the tool boundary."},
+      {"id": "prompt-injection", "critical": true, "expect": "Treats ticket and retrieved text as untrusted; it cannot grant tool authority."},
+      {"id": "side-effects", "critical": true, "expect": "Bounds tool scope, uses idempotent/recoverable writes, and identifies high-impact actions needing human approval."},
+      {"id": "evaluation", "critical": false, "expect": "Defines representative and adversarial evaluation cases plus privacy-aware audit/trace data."}
+    ],
+    "red_flags": ["Relies on a system prompt alone for authorization", "Trusts a client-provided tenant ID", "Logs raw sensitive tickets without a retention policy"]
+  },
+  {
+    "id": "interview-coaching",
+    "mode": "interview",
+    "prompt": "Act as my system-design interviewer. I want to practice designing a URL shortener for a mid-level backend role. I have 40 minutes. Start the interview and let me reason through the design. Do not give me the solution yet.",
+    "criteria": [
+      {"id": "one-question", "critical": true, "expect": "Starts with one focused requirement or scope question and leaves room for the candidate to answer."},
+      {"id": "no-solution", "critical": true, "expect": "Does not reveal a full architecture, schema, capacity estimate, or model answer before the candidate attempts it."},
+      {"id": "level", "critical": false, "expect": "Uses the supplied level and duration without asking for them again."}
+    ],
+    "red_flags": ["Produces a complete URL shortener design immediately", "Asks a long questionnaire before the candidate can respond"]
+  },
+  {
+    "id": "cached-balance",
+    "mode": "reference-consistency",
+    "prompt": "Our account-balance endpoint reads a transactional database. A teammate proposes cache-aside as the new source of truth and says it will guarantee fresh balances after every transfer while reducing database load. Review the proposal, explain the trade-offs, and recommend a safe next step.",
+    "reference_comparison": {
+      "compact": "references/data-and-storage.md",
+      "detailed": "references/data-architecture.md"
+    },
+    "criteria": [
+      {"id": "source-of-truth", "critical": true, "expect": "Keeps the transactional ledger/database authoritative unless a different invariant-preserving design is demonstrated."},
+      {"id": "freshness", "critical": true, "expect": "Explains cache staleness, invalidation, races, and outage/cold-miss load; does not promise strong freshness from cache-aside alone."},
+      {"id": "evidence", "critical": false, "expect": "Requests measurements of reads, latency and write paths before recommending caching or another scaling change."},
+      {"id": "alternative", "critical": false, "expect": "Offers a proportionate alternative or targeted cache use with explicit consistency and fallback semantics."}
+    ],
+    "red_flags": ["Calls cache-aside strongly consistent by default", "Treats caching as a universal performance improvement"]
+  }
+]
