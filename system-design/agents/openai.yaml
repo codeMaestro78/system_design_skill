@@ -1,0 +1,14 @@
+interface:
+  display_name: System Design
+  short_description: Design and review complex software systems
+  default_prompt: Use $system-design to design this system from requirements through
+    production operations.
+  icon_small: assets/icon.svg
+  icon_large: assets/icon.svg
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true
