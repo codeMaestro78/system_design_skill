@@ -4,6 +4,18 @@ An [Agent Skills](https://agentskills.io/specification) package for designing, r
 
 The skill covers small applications as well as distributed systems. It includes guidance for APIs, data ownership, capacity, reliability, security and privacy, cloud platforms, AI agent systems, migrations, and incident analysis. It also has an interactive interview mode that coaches before giving a complete solution.
 
+## Sample: one-clinic booking (300 appointments/day)
+
+> Sample output from the `small-clinic` scenario in [`evals/cases.json`](evals/cases.json). Full text in [`examples/small-clinic-sample.md`](examples/small-clinic-sample.md).
+
+300 appointments a day, two developers, one location — the skill recommends a modular monolith on the existing relational database, not microservices or a queue:
+
+- One web service + one database handles ~0.008 writes/s average (<1/s at peak); ~550k rows over 5 years.
+- Double bookings are prevented by a database constraint (`EXCLUDE USING gist` in PostgreSQL, or a unique slot write in MySQL), which works atomically even when no conflicting row exists yet — unlike read-then-insert or in-memory locks. Conflicts return `409 Conflict`.
+- Retries use a stable `Idempotency-Key` so a timeout or double-click does not create a second booking.
+- Backups with point-in-time recovery, a restore drill, and booking success/409/latency monitoring cover the booking journey.
+- Queue, cache, or service split only on measured triggers (e.g., notification retries blocking requests, sustained p95 breach).
+
 ## Install
 
 You need an agent that supports Agent Skills and a current Node.js installation for the [`skills` CLI](https://github.com/vercel-labs/skills/blob/main/README.md). The CLI commands below were checked with Node.js 24.15.0.
@@ -69,6 +81,7 @@ The agent should produce a recommendation tied to requirements, key data and req
 | [`system-design/references/`](system-design/references/) | Detailed and compact topic guides, read as needed |
 | [`system-design/agents/openai.yaml`](system-design/agents/openai.yaml) | Agent interface metadata |
 | [`evals/`](evals/) | Scenario prompts and a human review rubric |
+| [`examples/small-clinic-sample.md`](examples/small-clinic-sample.md) | Sample answer for the one-clinic booking scenario |
 | [`scripts/check_skill.py`](scripts/check_skill.py) | Frontmatter and local link checks |
 | [`.github/workflows/validate-skill.yml`](.github/workflows/validate-skill.yml) | Package checks run in GitHub Actions |
 
@@ -99,3 +112,7 @@ Passing package checks means the skill can be parsed and its local links resolve
 ## Contributing
 
 When guidance changes, keep related compact and detailed references consistent. Fix a demonstrated decision error with the smallest useful edit, then rerun the relevant scenario and a nearby case. Add a new scenario when it captures a distinct, consequential failure. See the [evaluation guide](evals/README.md) for the review format and pass criteria.
+
+## License
+
+MIT — see [LICENSE](LICENSE). You may reuse and modify the skill under those terms.
