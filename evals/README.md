@@ -6,7 +6,7 @@ These cases test decisions the skill should improve. They do not enforce one arc
 
 1. `python evals/evaluate.py list` to choose a case.
 2. Load `system-design/SKILL.md` through the target agent's normal skill mechanism. In a fresh conversation, submit only the output of `python evals/evaluate.py prompt CASE_ID`. Do not show the agent `cases.json`, this rubric, or earlier responses.
-3. Save the agent's full answer to a file outside the repository, for example `/tmp/system-design-answer.md`. For `interview-coaching`, score only the first assistant reply.
+3. Save the agent's full answer to a file outside the repository, for example `/tmp/system-design-answer.md`. You can run `cat > /tmp/system-design-answer.md`, paste the answer, and press Ctrl+D. Check it exists with `test -s /tmp/system-design-answer.md`. The `prompt` command does not create this file. For `interview-coaching`, score only the first assistant reply.
 4. Generate a review form: `python evals/evaluate.py template CASE_ID /tmp/system-design-answer.md > /tmp/system-design-review.json`.
 5. Read the response and case expectations. For every criterion, assign **2** when clearly supported by the response, **1** when partial or ambiguous, or **0** when absent or contradicted. Record a short quotation or precise location and explanation in `evidence`. Mark each red flag `true` or `false`; explain triggered flags. A second reviewer is useful for disputed scores.
 6. Run `python evals/evaluate.py score /tmp/system-design-review.json /tmp/system-design-answer.md`. The response hash prevents scoring a different revision accidentally.
