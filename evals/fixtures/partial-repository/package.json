@@ -1,0 +1,5 @@
+{
+  "name": "orders-prototype",
+  "private": true,
+  "scripts": {"start": "node src/orders.js"}
+}
