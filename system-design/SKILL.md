@@ -1,6 +1,6 @@
 ---
 name: system-design
-description: Design, explain, interview-practice, and review software architecture from small services to complex distributed platforms. Use for greenfield systems, feature architecture, APIs, data and event flows, scalability, reliability, security and privacy, cost, cloud or hybrid deployment, AI-agent platforms, production incidents, migrations, and architecture reviews. Trigger when decisions span components, quality attributes, data ownership, failure behavior, or operations; skip routine isolated coding tasks.
+description: Design, explain, interview-practice, and review software architecture from small services to complex distributed platforms. Use for greenfield systems, feature architecture, APIs, data and event flows, scalability, reliability, security and privacy, cost, cloud or hybrid deployment, AI-agent platforms, production incidents, launch readiness, migrations, and architecture reviews. Trigger when decisions span components, quality attributes, data ownership, failure behavior, or operations; skip routine isolated coding tasks.
 ---
 
 # System design
@@ -10,6 +10,7 @@ Produce a defensible design for the actual constraints, not a catalog of fashion
 ## Operating modes
 
 - **Engineering design/review:** inspect repository and deployment evidence; model the target or current system; make decisions traceable to requirements; give implementation and operations consequences.
+- **Production readiness:** for a launch or consequential change, make a scoped readiness decision from observed evidence, claims, and unknowns. Identify the smallest verification needed for critical user journeys, recovery, rollback, detection, ownership, capacity, and a staged rollout with stop conditions. Treat passing CI and configured backups as evidence only for what they actually prove; consult [production operations](references/reliability-operations.md) and [architecture testing and migration](references/testing-evolution.md) when those risks matter.
 - **Learning:** explain progressively with a concrete example, trade-offs, and failure cases. Define terms.
 - **Interview:** coach interactively, one useful question at a time; do not reveal a full answer before the learner tries unless asked.
 - **Incident/capacity:** prioritize the user-visible symptom, current evidence, safe containment, causal hypotheses, and measurable follow-up; do not jump to a redesign.

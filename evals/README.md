@@ -15,6 +15,8 @@ A scenario passes only if every critical criterion scores 2, at least 80% of all
 
 For `cached-balance`, run two fresh conversations using `prompt cached-balance --route compact` and `prompt cached-balance --route detailed`. Generate each review template with the matching `--route`. Compare both answers and their critical scores: if they disagree on source of truth or freshness, inspect the two references and fix the conflicting guidance. The default `automatic` run separately tests whether the skill routes well on its own.
 
+`launch-readiness` tests whether an agent can make a proportionate public-launch decision when CI passes but recovery, rollback, and incident response are unproven. Score the decision against the supplied evidence and the clinic's risks, not against a universal checklist. A limited rehearsal or internal rollout can be appropriate if it has a safe scope and stop conditions; calling the broad launch ready without closing critical gaps is not.
+
 ## Interpret results
 
 Fix the smallest supported guidance gap. Check whether the failure came from activation, reference routing, missing evidence, conflicting advice, or agent behavior despite clear instructions. Add a case only when it captures a distinct consequential failure. Do not rewrite the skill to force one case's preferred technology into all designs. Rerun the changed case and a nearby case after an edit; periodically run the full set across the agents you support. A package-only CI check cannot execute or grade agent behavior, so report these two forms of validation separately.

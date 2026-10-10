@@ -105,7 +105,7 @@ python evals/evaluate.py list
 python evals/evaluate.py prompt CASE_ID
 ```
 
-Submit the generated prompt to an agent with the skill loaded, then save the agent's full response to a file before running `template` or `score`. The prompt command only prints the question; it does not run an agent or create a response file. Follow the scoring steps in the [evaluation guide](evals/README.md). The cases include simple architecture choices, incomplete repository evidence, messaging and delivery claims, and interview coaching. Reviewers score the response against explicit criteria and red flags; the script does not judge architecture quality on its own.
+Submit the generated prompt to an agent with the skill loaded, then save the agent's full response to a file before running `template` or `score`. The prompt command only prints the question; it does not run an agent or create a response file. Follow the scoring steps in the [evaluation guide](evals/README.md). The cases include simple architecture choices, incomplete repository evidence, messaging and delivery claims, production launch readiness, and interview coaching. Reviewers score the response against explicit criteria and red flags; the script does not judge architecture quality on its own.
 
 Passing package checks means the skill can be parsed and its local links resolve. Passing the scenario evaluations offers narrower evidence that the guidance helped on those cases. Neither guarantees a correct design for every system. Verify changing vendor capabilities, prices, security guidance, and regulations against current primary sources before relying on them.
 

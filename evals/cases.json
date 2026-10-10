@@ -85,5 +85,18 @@
       {"id": "alternative", "critical": false, "expect": "Offers a proportionate alternative or targeted cache use with explicit consistency and fallback semantics."}
     ],
     "red_flags": ["Calls cache-aside strongly consistent by default", "Treats caching as a universal performance improvement"]
+  },
+  {
+    "id": "launch-readiness",
+    "mode": "production-readiness",
+    "prompt": "A clinic plans to launch its appointment booking service publicly next week. Unit and integration tests pass. Daily database backups are configured, but nobody has restored one or checked that restored bookings are usable. This release renames a database column used by the previous application version; the team says it can roll back by deploying the old image. Monitoring shows CPU and request count, but there is no alert for failed bookings or named incident responder. Load testing covered average traffic only. Based only on this evidence, should the team launch publicly? Separate verified facts from unproven claims, give the minimum checks and owners needed before a broad launch, and describe a safe rollout and stop conditions. Do not redesign the whole system.",
+    "criteria": [
+      {"id": "decision-evidence", "critical": true, "expect": "Gives a scoped decision to hold an unguarded broad public launch until consequential gaps are closed; separates tested evidence, configured-but-unproven controls, and unknowns without inventing targets or guarantees."},
+      {"id": "recovery-proof", "critical": true, "expect": "Requires an isolated restore drill that verifies application-level booking data and records measured recovery; treats RTO and RPO as business requirements to agree and test, not numbers supplied by the prompt."},
+      {"id": "change-safety", "critical": true, "expect": "Explains why the old image may be incompatible after the column rename and calls for a backward-compatible expand/contract migration or a rehearsed forward-repair and recovery path before relying on rollback."},
+      {"id": "detection-owner", "critical": true, "expect": "Defines booking-journey failure detection and actionable alerting, plus a named responder role and a minimal incident or recovery runbook; CPU and request counts alone are insufficient."},
+      {"id": "capacity-rollout", "critical": true, "expect": "Tests a plausible peak workload from stated assumptions, proposes a limited staged rollout, and gives observable stop or continue criteria and a containment action without claiming an unsafe release is ready."}
+    ],
+    "red_flags": ["Declares the broad public launch ready solely because unit/integration tests pass or backups are configured", "Treats redeploying the old image as a safe rollback after an incompatible schema rename without a compatibility or repair plan", "Claims configured backups prove recoverability or invents RTO/RPO targets as facts", "Requires microservices or multi-region deployment as a launch prerequisite without a demonstrated requirement"]
   }
 ]
