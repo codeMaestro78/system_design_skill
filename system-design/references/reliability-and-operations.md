@@ -1,20 +1,26 @@
 # Reliability and operations
 
-Use for production readiness, incident/scaling review, and recovery design. Sources: [Google SRE](sources.md#sre-reliability-operations), [AWS Reliability Pillar](sources.md#sre-reliability-operations), [OpenTelemetry](sources.md#sre-reliability-operations), [NIST incident response](sources.md#sre-reliability-operations).
+Use this for: a fast pass on production readiness, incident or scaling review, and recovery design.
 
-## Define service promises
+Sources: [Google SRE](sources.md#sre-reliability-operations), [AWS Reliability Pillar](sources.md#sre-reliability-operations), [OpenTelemetry](sources.md#sre-reliability-operations), [NIST incident response](sources.md#sre-reliability-operations).
 
-Identify critical user journeys and measure their success, latency, correctness and freshness with service level indicators (SLIs). Set service level objectives (SLOs) with a window, percentile/denominator, and owner; an error budget is the tolerated gap from the objective. A service level agreement (SLA) is a contractual commitment and need not equal the internal SLO. Do not substitute “high availability” for a target. Alert on meaningful user impact and budget burn, then use resource metrics for diagnosis.
+**Canonical guide:** [Reliability, performance, and production operations](reliability-operations.md). That file is the source of truth for SLO, RTO, and RPO guidance; this page is only a first pass.
 
-## Design failure and recovery
+## Decision rules
 
-For each dependency, list failure mode, affected users, detection, isolation/degradation, failover, and recovery. Include overload, regional failure, data corruption, expired credentials, bad deploy, and human error where relevant. Define recovery time objective (RTO) and recovery point objective (RPO) from business impact. Match backups, replication and disaster recovery strategy to those targets; test a restore and record elapsed time and data loss. Faster recovery often costs more and adds complexity.
+- Measure service level indicators on critical user journeys, then set an SLO with a window, denominator, and owner. An error budget is the tolerated gap. An SLA is contractual and need not equal the internal SLO. Never substitute "high availability" for a target.
+- Derive RTO and RPO from business impact, assign them to services and data classes, and test a restore. A configured backup or a green backup job is not proof of recoverability.
+- For each dependency, list failure mode, affected users, detection, isolation or degradation, failover, and recovery. Include overload, regional failure, data corruption, expired credentials, bad deploy, and operator error.
+- Instrument metrics, logs, and traces with correlation IDs so an operator can name the failing journey. Bound label cardinality and keep secrets and personal data out of telemetry.
+- Roll out progressively. A rollback that depends on a schema change is not a rollback unless the change is backward compatible or the forward-repair path is rehearsed.
+- Capacity: forecast peaks, watch saturation, queue age, and hot partitions. Load test with representative data and failure modes, and define abort conditions.
+- Incidents need a named responder, escalation, runbooks, communications, and a blameless postmortem. Run failover and disaster recovery drills; run chaos experiments only with a hypothesis and safety limits.
 
-## Operate the system
+**Review test:** can an operator detect the failure, tell which users are affected, stop further damage, and restore the service within its stated targets?
 
-- Capacity: forecast peaks and growth; watch saturation, queue age, hot partitions and headroom. Load test representative data and failure modes.
-- Telemetry: correlate metrics, logs and traces through request/job IDs; instrument critical paths, errors, retries, dependency latency, and cost. Bound cardinality and remove secrets and personal data.
-- Release: choose rolling, blue-green, canary, or feature flags according to rollback speed and migration risk. Evaluate canary against representative control traffic; plan reversible schema/data changes.
-- Incidents: assign alert owner, escalation, runbook, communications, and post-incident review. Exercise failover and disaster recovery; use chaos experiments only with clear hypotheses and safety limits.
+## Where to go next
 
-**Review test:** Can an operator detect the failure, tell which users are affected, stop further damage, and restore the service within its stated targets? If not, the design is incomplete.
+- Full objectives, resilience, observability, and launch-readiness guidance: [reliability and operations](reliability-operations.md).
+- Capacity sizing and load testing: [requirements and capacity](requirements-and-capacity.md).
+- Backup scope, restore drills, and data lifecycle: [data architecture](data-architecture.md).
+- Security incident path and tenant isolation: [security and privacy](security-privacy.md).

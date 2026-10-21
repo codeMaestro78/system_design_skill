@@ -1,19 +1,24 @@
 # Data and storage
 
-Use for persistence, data ownership, consistency, and lifecycle decisions. Sources: [PostgreSQL transactions and indexes](sources.md#data-cloud-container-and-operations-sources), [Amazon DynamoDB read consistency](sources.md#data-cloud-container-and-operations-sources), [Azure data patterns](sources.md#patterns), [NIST media sanitization](sources.md#security-and-privacy).
+Use this for: a fast pass on persistence, data ownership, consistency, and lifecycle questions.
 
-## Choose from access paths and invariants
+Sources: [PostgreSQL transactions and indexes](sources.md#data-cloud-container-and-operations-sources), [Amazon DynamoDB read consistency](sources.md#data-cloud-container-and-operations-sources), [Azure data patterns](sources.md#patterns), [NIST media sanitization](sources.md#security-and-privacy).
 
-List entities, owners, required queries, write rates, transaction boundaries, consistency needs, retention and deletion. A relational store suits relationships, constraints and multi-row transactions; a key/document store can suit access patterns and independent item operations. Neither category implies a universal scale or consistency level. Prototype critical queries and inspect indexes and query plans. An index speeds matching reads at storage and write cost. Search indexes, analytical stores, object stores and data lakes serve different query and lifecycle needs; treat them as derived or primary stores explicitly.
+**Canonical guide:** [Data architecture](data-architecture.md). That file is the source of truth for storage choice, invariants, and lifecycle; this page is only a first pass.
 
-For booking, inventory, or another no-conflict invariant, a read-then-insert inside a transaction may still race. Use an appropriate database constraint, or serialize writes through a resource row/lock that every writer uses. Explain why that lock target exists before the check, or how its creation is made race-safe. A query that locks only matching appointments locks nothing for an empty interval. State the isolation and retry behavior; test simultaneous writes against the actual database.
+## Decision rules
 
-## Distribution changes semantics
+- Name the authoritative source for every fact and its owner before choosing a store. A cache, replica, search index, or warehouse is derived data until proven otherwise.
+- Cache-aside gives stale reads, not strong consistency. It does not fix a slow write path, and cache entries can leak across tenants unless keys are tenant-scoped. Never promote a cache to source of truth without an invariant-preserving design.
+- Replicas are not backups. Plan separately for corruption, accidental deletion, ransomware, and operator error, with tested restores.
+- A read-then-insert inside a transaction still races for a no-conflict invariant. Use a database constraint, serializable execution with whole-transaction retry, or a resource row that every writer locks. A lock row must exist before it is used, and locking only matching rows protects nothing when the interval is empty.
+- State the actual consistency guarantee per flow (for example, read-your-own-write), the lag, and how the UI behaves during it. Replication and partitioning change semantics, not just scale.
+- A transaction does not span a database, a queue, and an external API. Define source of truth, commit boundary, duplicate handling, and reconciliation.
+- Specify schema evolution, backfill, retention, deletion propagation, backup scope, and restore objectives. A backup that has not been restored is unverified. Encryption does not establish deletion.
 
-Replication improves read locality or availability but adds lag and failover behavior. Partitioning/sharding spreads load but complicates joins, unique constraints, hot keys, rebalancing and cross-partition transactions. Specify a partition key from observed access patterns and skew; design migration when it must change. State the actual consistency guarantee for each flow (for example, read after own write) and how the UI handles lag.
+## Where to go next
 
-For multi-system writes, define the source of truth, commit boundary, duplicate/replay behavior and reconciliation path. Avoid assuming a transaction spans a database, queue and external API. See [distributed systems](distributed-systems.md) and [patterns](architecture-patterns.md) for outbox and saga choices.
-
-## Lifecycle is part of design
-
-Specify schema evolution, backward compatible rollout, backfill, retention, deletion propagation, backup frequency, restore objectives and restore tests. Encryption is useful but does not by itself establish deletion. Test recovery against the required data and time targets; a backup without a successful restore is unverified. For regulated data, verify current jurisdictional requirements before specifying a policy.
+- Storage choice, invariants, indexes, and lifecycle detail: [data architecture](data-architecture.md).
+- Outbox, saga, and cache patterns: [pattern catalog](pattern-catalog.md).
+- Delivery semantics and failure behavior: [distributed systems](distributed-systems.md).
+- Restore drills, RPO/RTO, and incident handling: [reliability and operations](reliability-operations.md).

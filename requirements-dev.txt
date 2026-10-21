@@ -1,1 +1,8 @@
+# Development dependencies for the checks in this repository.
+# Versions are pinned exactly so a build resolves the same tools every time.
+# mypy and coverage are pinned to the newest release that still installs on
+# Python 3.9, the lowest version the scripts support.
 PyYAML==6.0.3
+ruff==0.17.1
+mypy==1.19.1
+coverage==7.10.7

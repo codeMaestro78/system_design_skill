@@ -10,3 +10,20 @@ node_modules/
 .idea/
 .vscode/
 *.log
+
+# Build output
+dist/
+build/
+*.zip
+*.egg-info/
+
+# Test and type-check artifacts
+.coverage
+coverage.xml
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Patch leftovers
+*.rej
+*.orig

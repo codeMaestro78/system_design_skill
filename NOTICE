@@ -1,0 +1,30 @@
+NOTICE
+======
+
+Third-party material
+--------------------
+
+`system-design/assets/icon.svg` previously held a third-party mark. The file was
+byte-identical (SHA-256 `e9301497fa98ef56aaca7ede0857b9a18dc06c34040f0679c609a6bf49b1d38b`)
+to `assets/icon.svg` in the public repository:
+
+    DT-wanf/SCI-Skills — https://github.com/DT-wanf/SCI-Skills
+    File: assets/icon.svg
+
+The mark is the work of DT-wanf, the owner of that repository. That repository
+carries no licence file, so it granted no explicit permission for the mark to be
+redistributed, and the copy in this repository was made without attribution.
+
+The mark has been removed from this repository. It is no longer present in
+`system-design/assets/` and is not included in any archive built by
+`scripts/package.py`.
+
+Current artwork
+---------------
+
+The artwork now in `system-design/assets/` — `icon.svg`, `logo.svg`, and
+`logo-512.png` — is original work derived from this repository's own logo, and
+is covered by this repository's MIT licence. See `LICENSE`.
+
+This notice applies to the artwork only. The references, templates, scripts, and
+evaluation material in this repository are original work under the same licence.

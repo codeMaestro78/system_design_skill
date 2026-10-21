@@ -1,23 +1,24 @@
 # Architecture patterns
 
-Choose patterns by the failure or change pressure they solve. Each adds state, operations or semantics. Sources: [Azure patterns](sources.md#patterns), [AWS saga and fault isolation](sources.md#patterns). Guidance below is a recommendation unless a cited source explicitly defines a pattern.
+Use this for: matching a named failure or change pressure to a pattern before adopting it.
 
-| Pattern | Fit | Cost and common misuse |
-| --- | --- | --- |
-| API gateway / backend for frontend | Shared entry controls; client-specific composition | Gateway becomes bottleneck or business monolith; avoid needless layers. |
-| Service discovery | Dynamic independently deployed instances | Registry/control-plane failure; static endpoints suffice for small deployments. |
-| Strangler migration | Replace a legacy system by slices | Dual routing and data ownership may persist; plan cutover/rollback. |
-| Cache-aside / read-through | Hot reads with acceptable staleness | Miss storms, invalidation, origin overload; cache does not fix a slow write path. |
-| Write-through / write-behind | Synchronized reads / buffered writes | Write-through adds latency; write-behind risks delayed loss and ordering. |
-| Queue load leveling / competing consumers | Bursty async work within downstream capacity | Backlog, poison jobs, lost ordering; a queue does not add throughput. |
-| Dead-letter queue | Isolate work that exceeded a defined retry policy | Silent graveyard unless monitored, triaged and replayed safely. |
-| CQRS / materialized view | Read and write shapes differ materially | Projection lag and duplicate models; unnecessary for basic CRUD. CQRS does not require event sourcing. |
-| Event sourcing | Domain history and reconstruction are first-class needs | Replay, event evolution, privacy deletion, projection complexity; do not adopt for incidental audit logs. |
-| Change-data capture | Publish committed DB changes or migrate data | Connector lag, schema drift, replay/ordering; business intent may be missing from raw row changes. |
-| Transactional outbox / idempotent inbox | DB and broker cannot share one commit | Relay lag, duplicate delivery, ordering and deduplication state. |
-| Saga / compensation | Cross-owner business workflow with partial progress | Compensation may fail and is not rollback; weak isolation and complex reconciliation. |
-| Circuit breaker / bulkhead | Remote failure or shared resource saturation | False opens, capacity fragmentation; shared downstream state can defeat isolation. |
-| Retry / throttle / rate limit | Transient errors / overload or abuse | Retry storms and unfairness; require budgets, idempotency, and feedback. |
-| Cell-based architecture | Strong blast-radius limits at very large scale | Routing, duplicated capacity, cross-cell operations; avoid when a simpler partition suffices. |
+Sources: [Azure patterns](sources.md#patterns), [AWS saga and fault isolation](sources.md#patterns).
 
-For every chosen pattern, state its trigger, ownership, steady-state path, failure path, metric, and removal or migration condition. Combine patterns carefully: retry plus circuit breaker can create two feedback loops; queue plus workers still depends on downstream capacity; outbox publication still needs consumer idempotency. Verify product-specific guarantees in current documentation before relying on them.
+**Canonical guide:** [Pattern catalog](pattern-catalog.md). That file is the source of truth for pattern fit, cost, and misuse; this page is only a first pass.
+
+## Decision rules
+
+- Adopt a pattern only for a stated pressure, and state the simpler alternative you rejected. Every pattern adds state, failure modes, and operational work.
+- Traffic and fan-out: API gateway or BFF for shared entry policy; competing consumers for independent parallel work; pub/sub for independent fan-out.
+- Load bursts: queue-based load leveling and dead-letter handling for async work; rate limiting and bulkheads to protect shared capacity. A queue does not add throughput.
+- Read cost: cache-aside only after measurement, with an explicit source of truth and invalidation path. A cache does not fix a slow write path, and cache entries can leak across tenants.
+- Write and read shape divergence: CQRS with a materialized view. CQRS does not require event sourcing; event sourcing is for history and replay as first-class requirements.
+- Cross-owner workflows: transactional outbox for publish-after-commit, saga with compensation for multi-owner business processes. Compensation is not rollback.
+- Migration and scale: strangler migration for legacy replacement, sharding only on a measured limit, cell-based isolation only for a real blast-radius need, multi-region active-active only when regional write or availability targets demand it.
+- Combining patterns multiplies risk: retry plus circuit breaker can form two feedback loops, and outbox publication still needs consumer idempotency.
+
+## Where to go next
+
+- Full table with fit, cost, and misuse checks: [pattern catalog](pattern-catalog.md).
+- Pattern choices recorded as decisions: [architecture method](architecture-method.md).
+- Source of truth and consistency behind these patterns: [data architecture](data-architecture.md).

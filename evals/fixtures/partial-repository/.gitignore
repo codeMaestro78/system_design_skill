@@ -1,0 +1,2 @@
+# The local compose setup expects this file to be present in the tree.
+!.env

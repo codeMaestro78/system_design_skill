@@ -2,21 +2,75 @@ name: Validate system-design skill
 
 on:
   push:
+    paths:
+      - 'system-design/**'
+      - 'scripts/**'
+      - 'evals/**'
+      - 'tests/**'
+      - '.github/**'
+      - 'requirements-dev.txt'
+      - 'pyproject.toml'
+      - 'README.md'
   pull_request:
+    paths:
+      - 'system-design/**'
+      - 'scripts/**'
+      - 'evals/**'
+      - 'tests/**'
+      - '.github/**'
+      - 'requirements-dev.txt'
+      - 'pyproject.toml'
+      - 'README.md'
+  workflow_dispatch:
+
+concurrency:
+  group: validate-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
-      - run: python -m pip install -r requirements-dev.txt
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+      - name: Install check dependencies
+        run: python -m pip install --disable-pip-version-check PyYAML==6.0.3
+      - name: Install development tooling
+        continue-on-error: true
+        run: python -m pip install --disable-pip-version-check -r requirements-dev.txt
       - run: python scripts/check_skill.py
       - run: python evals/evaluate.py validate
       - run: python -m unittest discover -s tests -v
+      - name: Lint
+        continue-on-error: true
+        run: ruff check .
+      - name: Coverage
+        continue-on-error: true
+        run: |
+          coverage run -m unittest discover -s tests
+          coverage report
+      - name: Package
+        run: |
+          python scripts/package.py --check
+          python scripts/package.py --out dist
+      - name: Upload package artifact
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/upload-artifact@v7
+        with:
+          name: system-design-package
+          path: dist/
+          if-no-files-found: error
+      - name: Dependency review
+        if: github.event_name == 'pull_request'
+        uses: actions/dependency-review-action@v5
+        with:
+          fail-on-severity: moderate

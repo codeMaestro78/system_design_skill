@@ -1,5 +1,14 @@
-<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M3 13.5C3 12.1193 4.11929 11 5.5 11H9V21H5.5C4.11929 21 3 19.8807 3 18.5V13.5Z" fill="#FFD400"/>
-<path d="M15 7H18.5C19.8807 7 21 8.11929 21 9.5V18.5C21 19.8807 19.8807 21 18.5 21H15V7Z" fill="#F75858"/>
-<path d="M9 5.5C9 4.11929 10.1193 3 11.5 3H12.5C13.8807 3 15 4.11929 15 5.5V21H9V5.5Z" fill="#FFA43D"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" role="img" aria-label="System Design">
+  <title>System Design</title>
+  <g stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+    <rect x="8.75" y="1.25" width="6.5" height="3.25" rx="1.25"/>
+    <path d="M12 4.5V7.25"/>
+    <path d="M4.75 9.75V7.25H19.25V9.75"/>
+    <rect x="1.5" y="9.75" width="6.5" height="3.5" rx="1.25"/>
+    <rect x="16" y="9.75" width="6.5" height="3.5" rx="1.25"/>
+    <path d="M4.75 13.25L12 17.5"/>
+    <path d="M19.25 13.25L12 17.5"/>
+    <path d="M7.75 19A4.25 1.5 0 0 1 16.25 19V20.75A4.25 1.5 0 0 1 7.75 20.75Z" fill="#F75858" stroke="none"/>
+    <ellipse cx="12" cy="19" rx="4.25" ry="1.5"/>
+  </g>
 </svg>

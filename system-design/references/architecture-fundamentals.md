@@ -1,28 +1,24 @@
 # Architecture foundations
 
-Use this for greenfield design, architectural reviews, and major feature boundaries. Sources: [AWS Well-Architected](sources.md#skills-format-and-architecture-foundations), [Azure Architecture Center](sources.md#skills-format-and-architecture-foundations), and [C4 model](sources.md#skills-format-and-architecture-foundations).
+Use this for: a fast first pass on a greenfield design, an architectural review, or a major feature boundary.
 
-## Discover before drawing
+Sources: [AWS Well-Architected](sources.md#architecture-foundations), [Azure Architecture Center](sources.md#architecture-foundations), [C4 model](sources.md#architecture-foundations).
 
-Capture actors, critical journeys, data owners, external dependencies, failure impact, team ownership, and constraints. Separate business behavior from quality attributes. Prioritize must/should/could/out of scope; write measurable quality targets or mark them open. A design serves a workload and organization, not an abstract scale label.
+**Canonical guide:** [Architecture method and decision records](architecture-method.md). That file is the source of truth for style selection and the ADR format; this page is only a first pass.
 
-For an existing system, make a component map from code paths and runtime/deployment evidence. Cite file paths and symbols. Mark behavior inferred from naming as a hypothesis until a call path, test, or operational artifact supports it.
+## Decision rules
 
-## Boundaries and interfaces
+- Discover before drawing: actors, critical journeys, data owners, external dependencies, failure impact, team ownership, constraints. Separate known fact from assumption. Write a measurable target or mark it open.
+- Group behavior by domain ownership and change cadence. One owner per dataset. No shared writes across owners without a stated reason.
+- Name a style only when a requirement forces it. Default to a modular monolith; move a boundary into a service only when independent scaling, ownership, release cadence, or isolation pays for the distributed cost.
+- Record consequential choices with context, decision, alternatives, consequences, confidence, owner, and revisit trigger. Use the ADR schema in [architecture method](architecture-method.md); do not improvise a second one.
+- For an existing system, build the component map from code paths and runtime evidence, cite file paths and symbols, and mark naming-based inferences as hypotheses until a call path, test, or operational artifact supports them.
+- Show the system boundary and responsibilities before deployment detail. Keep the diagram consistent with the prose.
 
-Group behavior by domain ownership and change cadence. Define module/API boundaries around invariants and data ownership; avoid shared writes across independent owners. Specify request/response or event schemas, versioning, authentication, authorization, error behavior, pagination, and compatibility policy. Include accessibility and user impact for product-facing paths.
+## Where to go next
 
-| Style | Fits | Costs and misuse |
-| --- | --- | --- |
-| Layered or modular monolith | Small to medium teams, shared transactions, evolving domains | Requires enforced module boundaries; a shared codebase can become tightly coupled. |
-| Microservices | Distinct ownership and scaling needs with mature operations | Network failure, data consistency, deployment and observability overhead; splitting before boundaries stabilize can slow changes. |
-| Event-driven | Loose time coupling, fan-out, durable asynchronous work | Ordering, replay, duplicate handling, schema evolution, and difficult tracing. |
-| Serverless | Bursty/event workloads and managed operations | Runtime/platform limits, cold starts, dependency and cost variability. |
-| Peer-to-peer | Decentralized ownership or offline cooperation | Coordination, identity, abuse and consistency are harder. |
-| Hybrid | Different workloads with genuinely different needs | Extra interfaces and operational models; justify each boundary. |
-
-## Decisions and evolution
-
-Record consequential choices in a short architecture decision record: context, decision, alternatives, consequences, date, and revisit trigger. Plan an incremental migration with compatibility, data backfill, cutover, rollback, and owner. Review decisions when traffic, team structure, or measured reliability changes. A diagram should show a system boundary and responsibilities before deployment detail.
-
-**Recommendation:** Begin with the simplest architecture that meets known constraints. Move a boundary into a separately deployed service only when independent scaling, ownership, release cadence, or isolation compensates for distributed costs.
+- Workload sizing and targets: [requirements and capacity](requirements-and-capacity.md).
+- Persistence, ownership, and invariants: [data architecture](data-architecture.md).
+- Pattern choice and its costs: [pattern catalog](pattern-catalog.md).
+- Objectives, failure behavior, and operations: [reliability and operations](reliability-operations.md).
+- Trust boundaries, tenancy, and privacy: [security and privacy](security-privacy.md).

@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="System Design">
+  <title>System Design</title>
+  <rect x="0" y="0" width="512" height="512" rx="112" fill="#0D1526"/>
+  <!-- connectors -->
+  <line x1="256" y1="144" x2="256" y2="216" stroke="#475569" stroke-width="12" stroke-linecap="round"/>
+  <line x1="256" y1="216" x2="152" y2="216" stroke="#475569" stroke-width="12" stroke-linecap="round"/>
+  <line x1="256" y1="216" x2="360" y2="216" stroke="#475569" stroke-width="12" stroke-linecap="round"/>
+  <line x1="152" y1="304" x2="152" y2="348" stroke="#475569" stroke-width="12" stroke-linecap="round"/>
+  <line x1="360" y1="304" x2="360" y2="348" stroke="#475569" stroke-width="12" stroke-linecap="round"/>
+  <line x1="152" y1="348" x2="256" y2="348" stroke="#475569" stroke-width="12" stroke-linecap="round"/>
+  <line x1="360" y1="348" x2="256" y2="348" stroke="#475569" stroke-width="12" stroke-linecap="round"/>
+  <!-- top: client / gateway -->
+  <rect x="176" y="72" width="160" height="72" rx="18" fill="none" stroke="#FFD400" stroke-width="10"/>
+  <circle cx="256" cy="108" r="15" fill="#FFD400"/>
+  <!-- mid left: service -->
+  <rect x="72" y="216" width="160" height="88" rx="18" fill="#10233F" stroke="#38BDF8" stroke-width="10"/>
+  <circle cx="112" cy="260" r="13" fill="#38BDF8"/>
+  <rect x="136" y="250" width="72" height="20" rx="10" fill="#38BDF8"/>
+  <!-- mid right: service -->
+  <rect x="280" y="216" width="160" height="88" rx="18" fill="#2A1A10" stroke="#FFA43D" stroke-width="10"/>
+  <circle cx="320" cy="260" r="13" fill="#FFA43D"/>
+  <rect x="344" y="250" width="72" height="20" rx="10" fill="#FFA43D"/>
+  <!-- bottom: database (drum: straight sides, elliptical top and bottom) -->
+  <path d="M186 348V410A70 22 0 0 0 326 410V348A70 22 0 0 0 186 348Z" fill="#F75858"/>
+  <ellipse cx="256" cy="348" rx="70" ry="22" fill="#FF7A7A"/>
+  <ellipse cx="256" cy="348" rx="70" ry="22" fill="none" stroke="#F75858" stroke-width="6"/>
+  <ellipse cx="256" cy="410" rx="70" ry="22" fill="#B93A3A"/>
+  <ellipse cx="256" cy="410" rx="70" ry="22" fill="none" stroke="#F75858" stroke-width="6"/>
+  <!-- joint dots -->
+  <circle cx="256" cy="216" r="12" fill="#E2E8F0"/>
+  <circle cx="152" cy="348" r="10" fill="#E2E8F0"/>
+  <circle cx="360" cy="348" r="10" fill="#E2E8F0"/>
+</svg>

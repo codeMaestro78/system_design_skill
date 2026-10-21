@@ -1,8 +1,12 @@
 # Security, privacy, and threat modeling
 
+Use this for: threat modeling, identity and authorization design, tenant isolation, and privacy lifecycle decisions. This file is the canonical guide for multi-tenant isolation in the reference set.
+
+Sources: [OWASP threat modeling](sources.md#security-and-privacy), [OWASP authorization](sources.md#security-and-privacy), [OWASP multi-tenant security](sources.md#security-and-privacy), [NIST Privacy Framework](sources.md#security-and-privacy).
+
 ## Threat-model workflow
 
-Treat security and privacy as continuous design constraints. Define assets and data classes, actors and capabilities, entry points, data flows, trust boundaries, deployment dependencies, and misuse cases. Draw a data-flow diagram. Use STRIDE, attack trees, abuse cases, or another method as useful; no one taxonomy is complete. For each prioritized threat, record scenario, affected asset/tenant, impact and likelihood basis, prevention, detection, response/recovery, owner, test/evidence, and residual risk. Revisit after material changes and incidents.
+Treat security and privacy as continuous design constraints. Define assets and data classes, actors and capabilities, entry points, data flows, trust boundaries, deployment dependencies, and misuse cases. Draw a data-flow diagram. Use STRIDE, attack trees, abuse cases, or another method as useful; no one taxonomy is complete. For each prioritized threat, record scenario, affected asset/tenant, impact and likelihood basis, prevention, detection, response/recovery, owner, test/evidence, and residual risk. Revisit after material changes and incidents. Trust boundaries identified here should match the boundaries drawn in [architecture method](architecture-method.md).
 
 ## Identity and authorization
 
@@ -13,6 +17,8 @@ Test object-level, property-level, function-level, nested-resource, background-j
 ## Multi-tenant isolation
 
 Map tenant boundaries across compute, database, cache, search, object storage, queue, encryption keys, logs/metrics, backup, admin/support, analytics, and AI retrieval. Compare shared-pool, hybrid, and silo isolation against blast radius, noisy neighbors, residency, custom controls, cost, performance, provisioning, migration, and deletion. Propagate tenant context safely and test confused-deputy, IDOR, join, cache-key, and background-task leakage. Isolation is a continuum; choose per threat and customer promise.
+
+Store-level isolation choices are constrained by the data classification and ownership model; set those first in [data architecture](data-architecture.md).
 
 ## Data privacy and lifecycle
 
@@ -26,7 +32,7 @@ Review dependency and base-image provenance/updates, CI/CD identities, artifact 
 
 ## Detection and assurance
 
-Audit identity, authorization failures, admin changes, exports, key/secret access, policy changes, and security events. Protect log integrity and restrict access; avoid recording unnecessary personal data. Plan alert/triage/containment/recovery, credential revocation, tenant isolation, evidence preservation, communication, and drills. Map important threats to controls and tests: negative authZ/tenant tests, secrets/dependency checks, infrastructure policy, deletion/restore exercises, tabletop or penetration testing proportional to risk.
+Audit identity, authorization failures, admin changes, exports, key/secret access, policy changes, and security events. Protect log integrity and restrict access; avoid recording unnecessary personal data. Plan alert/triage/containment/recovery, credential revocation, tenant isolation, evidence preservation, communication, and drills. Map important threats to controls and tests: negative authZ/tenant tests, secrets/dependency checks, infrastructure policy, deletion/restore exercises, tabletop or penetration testing proportional to risk. Operate the resulting alert and drill practice with [reliability and operations](reliability-operations.md).
 
 ## Trade-offs to state
 

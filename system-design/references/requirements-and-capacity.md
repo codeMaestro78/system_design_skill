@@ -1,8 +1,12 @@
 # Requirements and workload modeling
 
+Use this for: eliciting testable requirements, sizing a workload, and finding the binding capacity constraint before a design decision is made.
+
+Sources: [Google SRE](sources.md#sre-reliability-operations), [Little's Law](sources.md#distributed-systems-and-messaging), [AWS Well-Architected](sources.md#architecture-foundations).
+
 ## Make requirements testable
 
-Record each requirement with its user/business importance, scope, operating condition, metric, target or unresolved status, owner, and verification method. Distinguish a product requirement, internal SLO, contractual SLA, regulatory obligation, and a provisional assumption. Define quality at the critical user journey, not only at an individual component.
+Record each requirement with its user/business importance, scope, operating condition, metric, target or unresolved status, owner, and verification method. Distinguish a product requirement, internal SLO, contractual SLA, regulatory obligation, and a provisional assumption. Define quality at the critical user journey, not only at an individual component. Turn each quality attribute into a scenario in the format defined in [architecture method](architecture-method.md).
 
 Ask for normal, peak, burst, seasonal, and failure workloads. Include traffic mix, tenant skew, request size, read/write/compute mix, fan-out, background work, data retention, locality, and growth horizon. Never invent load figures. If the user lacks them, create explicit scenarios (low/base/high) and label values illustrative.
 
@@ -28,8 +32,8 @@ Define user-perceived latency percentiles and scope (client-to-edge, service bou
 
 Map each critical path to throughput/capacity limits, resource saturation, concurrency limits, quotas, and failure-domain headroom. Examine CPU, memory, disk/IOPS, connections, locks, network, hot keys/partitions, queue age, provider quotas, and human/operator capacity. Model skew and noisy neighbors. Include degraded capacity after losing an instance, zone, region, dependency, or replica.
 
-Use measurement and representative benchmarks before scaling decisions. Load tests need realistic data shape, cache state, concurrency, traffic distribution, dependencies, and success criteria. Test beyond expected peak to discover the knee/overload behavior; define abort conditions and avoid harming shared production systems.
+Use measurement and representative benchmarks before scaling decisions. Load tests need realistic data shape, cache state, concurrency, traffic distribution, dependencies, and success criteria. Test beyond expected peak to discover the knee/overload behavior; define abort conditions and avoid harming shared production systems. Pattern choices that move pressure (queues, caches, bulkheads) are listed in the [pattern catalog](pattern-catalog.md); each one adds failure modes that sizing must account for.
 
 ## Decision output
 
-Conclude with current demand, projected range/horizon, binding bottleneck, headroom, scaling mechanism, and the metric that triggers capacity action. Distinguish horizontal/vertical scaling and autoscaling. Autoscaling has reaction delay, warm-up and quota limits; it does not fix serial work or a saturated dependency. Queueing increases tolerance to bursts only while queue size/age and processing recovery are bounded.
+Conclude with current demand, projected range/horizon, binding bottleneck, headroom, scaling mechanism, and the metric that triggers capacity action. Distinguish horizontal/vertical scaling and autoscaling. Autoscaling has reaction delay, warm-up and quota limits; it does not fix serial work or a saturated dependency. Queueing increases tolerance to bursts only while queue size/age and processing recovery are bounded. Operating the resulting capacity (thresholds, on-call actions, cost signals) is covered in [reliability and operations](reliability-operations.md).

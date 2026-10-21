@@ -1,5 +1,10 @@
 {
   "name": "orders-prototype",
   "private": true,
-  "scripts": {"start": "node src/orders.js"}
+  "scripts": {
+    "start": "node src/orders.js",
+    "test": "node test/orders.test.js",
+    "lint": "node --check src/orders.js"
+  },
+  "dependencies": {}
 }
