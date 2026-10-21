@@ -1,6 +1,7 @@
 # Cloud, containers, and platform architecture
 
 Use this for: choosing where and how a workload runs - managed-service adoption, quotas and serverless economics, container and orchestration choices, multi-region placement, and egress cost.
+Sources: [AWS Well-Architected](sources.md#architecture-foundations), [Azure cloud design patterns](sources.md#patterns), [CNCF Cloud Native Landscape](sources.md#data-cloud-container-and-operations-sources), [AWS Builders' Library](sources.md#first-party-engineering-case-studies).
 
 ## Placement and responsibility
 

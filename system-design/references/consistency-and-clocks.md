@@ -69,16 +69,17 @@ During a partition the side holding a majority keeps serving, and the minority s
 
 Never order events by a client-supplied timestamp. Give the server a monotonic sequence for anything that must be ordered, and detect cross-node causality rather than assume it.
 
+Compare vector clocks over the union of their keys. A node absent from one clock has a counter of zero there, so comparing only the keys each clock happens to carry manufactures an ordering out of missing data. The result is the order of `a` relative to `b`: `before` when every component of `a` is at most the matching component of `b` and at least one is strictly smaller, `after` for the mirror case, and `concurrent` when neither dominates, which is the case that needs a merge rule rather than a newer timestamp.
+
 ```python
 def compare_clocks(a, b):
-    """Return 'before', 'after', or 'concurrent' for two vector clocks."""
-    a_before_b = all(b.get(k, 0) <= v for k, v in a.items())
-    b_before_a = all(a.get(k, 0) <= v for k, v in b.items())
-    a_strict = any(b.get(k, 0) < v for k, v in a.items())
-    b_strict = any(a.get(k, 0) < v for k, v in b.items())
-    if a_before_b and a_strict:
+    """Return 'before', 'after', or 'concurrent': the order of a relative to b."""
+    keys = set(a) | set(b)
+    a_le_b = all(a.get(k, 0) <= b.get(k, 0) for k in keys)
+    b_le_a = all(b.get(k, 0) <= a.get(k, 0) for k in keys)
+    if a_le_b and not b_le_a:
         return "before"
-    if b_before_a and b_strict:
+    if b_le_a and not a_le_b:
         return "after"
     return "concurrent"
 ```

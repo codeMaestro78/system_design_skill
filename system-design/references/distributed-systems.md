@@ -1,6 +1,7 @@
 # Distributed systems and messaging
 
 Use this for: reasoning about partial failure across process, database, queue, and external boundaries - delivery semantics, idempotency, outbox and saga patterns, quorum arithmetic, and the scope of an exactly-once claim.
+Sources: [Gilbert and Lynch, Brewer's conjecture](sources.md#distributed-systems-and-messaging), [Confluent delivery semantics](sources.md#distributed-systems-and-messaging), [AWS transactional outbox](sources.md#patterns), [Microsoft transient fault handling](sources.md#first-party-engineering-case-studies), [Little's formula](sources.md#distributed-systems-and-messaging).
 
 ## Assume partial failure
 

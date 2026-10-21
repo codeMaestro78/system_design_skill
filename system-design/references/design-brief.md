@@ -1,6 +1,8 @@
 # Complex design brief and architecture review
 
-Use this as a structure for complex, high-impact, cross-team, or production architecture work. Omit sections that do not affect the decision, and say why in one line. Label each statement **Observed**, **Given**, **Assumed**, **Estimated**, **Recommended**, or **Open** when its status could be confused. The fill-in twin of this structure, with a table or prompt for every section, is the [design doc template](../templates/design-doc.md); this file carries the rules a reviewer applies.
+Use this for: complex, high-impact, cross-team, or production architecture work, structured as a brief a reviewer applies. Omit sections that do not affect the decision, and say why in one line. Label each statement **Observed**, **Given**, **Assumed**, **Estimated**, **Recommended**, or **Open** when its status could be confused. The fill-in twin of this structure, with a table or prompt for every section, is the [design doc template](../templates/design-doc.md); this file carries the rules a reviewer applies.
+
+Sources: [AWS Well-Architected](sources.md#architecture-foundations), [Azure Architecture Center](sources.md#architecture-foundations), [C4 model](sources.md#architecture-foundations), [Google SRE launch checklist](sources.md#sre-reliability-operations), [RFC 9457 problem details](sources.md#api-and-protocol-design).
 
 ## Tiering: state the tier before writing
 
@@ -8,14 +10,14 @@ Every brief opens with a tier line and a reason, then only the sections that tie
 
 | Tier | Use when | Required |
 |---|---|---|
-| A | Reversible change in one service and one team: no new data class, no new dependency, no contract another team consumes | 1, 2, 7, 11 |
+| A | Reversible change in one service and one team: no new data class, no new dependency, no contract another team consumes | 1, 2, 7, 11, 12 |
 | B | Feature or cross-team change: new tenant-visible endpoint, event, or data class, new dependency, new team in the path | 1 to 7, 9, 11, 12 |
 | C | New system, migration of a system of record, autonomous AI action, regulated data at a new boundary, cross-region, irreversible cutover | 1 to 22 |
 
-Sections 8 and 10 stay conditional in every tier; Tier C adds 14 to 22 to the 1 to 12 core.
+Sections 8 and 10 stay conditional in every tier; Tier C adds 13 to 22 to the 1 to 12 core.
 
 - State the tier and the reason in the first two lines. A tier with no stated reason was chosen after the fact.
-- Do not inflate: a Tier A brief is four sections and about a page, and a brief whose size does not vary by tier has been padded.
+- Do not inflate: a Tier A brief is five sections (1 executive decision, 2 context and requirements, 7 decisions and alternatives, 11 delivery and validation plan, 12 open decisions) and about a page, and a brief whose size does not vary by tier has been padded.
 - Do not under-serve: a Tier C brief missing the readiness checklist, cost model, migration plan, glossary, or evidence appendix is incomplete and is returned for those sections.
 - Escalate on trigger, not size: A becomes B on a cross-team contract, a new data class, a new dependency, or an irreversible step; B becomes C on regulated data, a system of record, an autonomous agent, or a second region. Write the missing sections.
 - A deliberately omitted section says why in one line.

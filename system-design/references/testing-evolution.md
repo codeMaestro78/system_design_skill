@@ -2,6 +2,8 @@
 
 Use this for: choosing what proves a design works and how to change it without breaking it - the verification portfolio, expand-and-contract migrations, schema and contract evolution, and fitness functions.
 
+Sources: [Pact consumer-driven contract testing](sources.md#api-and-protocol-design), [Google SRE books](sources.md#sre-reliability-operations), [AWS Builders' Library](sources.md#first-party-engineering-case-studies), [PostgreSQL indexes](sources.md#data-cloud-container-and-operations-sources), [Microsoft transactional outbox](sources.md#patterns).
+
 ## Verification portfolio
 
 Tie tests to requirements, risks, and failure modes. Use the lowest-cost test that gives credible evidence, but do not substitute unit tests for cross-boundary behavior.
@@ -41,7 +43,7 @@ What each forbids:
 | Make an optional field required | No | No | Breaks readers of old data and writers of new data |
 | Add a required field | No | No | Same, and it is the single most common source of a broken deploy |
 
-Protobuf specifics: fields are matched by tag number, not by name. A tag number is never reused, and a removed field has its number and name reserved so it cannot be reallocated later. Renaming a field is wire-compatible and source-incompatible, which is a compile-time break and a runtime no-op. Changing `int32` to `int64`, or `int32` to `uint32`, is wire-compatible but not source-compatible. A required field in the proto2 style cannot be added in a compatible change; proto3 has no required fields, which is one reason proto3 is the safer default. A Protobuf service method cannot change its signature without breaking the generated stub.
+Protobuf specifics: fields are matched by tag number, not by name. A tag number is never reused, and a removed field has its number and name reserved so it cannot be reallocated later. Renaming a field is wire-compatible and source-incompatible, which is a compile-time break and a runtime no-op. Changing `int32` to `int64`, or `int32` to `uint32`, is a source-incompatible change and, on the wire, a binary wire-compatible change that is only conditionally safe: the same data parses before and after, but the parse can be lossy, because a value larger than `INT32_MAX` written by a new writer has its high-order bits discarded by a client that still reads the field as `int32`. It is therefore only safe with a managed rollout, and it should not be made on a published schema. A required field in the proto2 style cannot be added in a compatible change; proto3 has no required fields, which is one reason proto3 is the safer default. A Protobuf service method cannot change its signature without breaking the generated stub.
 
 Avro specifics: resolution is by writer schema and reader schema, and the writer's schema travels with the data, so a reader resolves what it can. A new field must have a default for an older reader to resolve it. Enum symbols are matched by name, and a reader that does not know a symbol cannot resolve the value unless the schema carries a fallback. Avro's field resolution rules make name changes and deletions resolvable with an alias or a default, but the compatibility tooling still has to be told to use them.
 

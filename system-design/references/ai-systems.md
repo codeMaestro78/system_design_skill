@@ -1,8 +1,8 @@
 # AI and agent system architecture
 
-Use this for: designing an AI feature or agent workflow — topology, tool contracts, agent loop control, retrieval and memory, evaluation, and multi-agent orchestration. This file is the canonical guide for AI and agent system design in the reference set.
+Use this for: designing an AI feature or agent workflow - topology, tool contracts, agent loop control, retrieval and memory, evaluation, and multi-agent orchestration. This file is the canonical guide for AI and agent system design in the reference set.
 
-Sources: [OWASP LLM risks](sources.md#ai-and-agent-systems), [OpenAI agent guidance](sources.md#ai-and-agent-systems), [NIST AI RMF](sources.md#ai-and-agent-systems).
+Sources: [OWASP LLM risks](sources.md#ai-and-agent-systems), [OWASP excessive agency](sources.md#ai-and-agent-systems), [OpenAI agent guidance](sources.md#ai-and-agent-systems), [NIST AI RMF](sources.md#ai-and-agent-systems).
 
 AI features inherit distributed-systems failure modes and add probabilistic output, model/provider dependence, prompt/tool security, evaluation, and variable cost. Treat model calls as external services and agents as constrained application components, not trusted peers.
 
@@ -34,7 +34,7 @@ Return structured errors the model can act on: stable code, short message, retry
 
 Cap result size: bytes and rows, pagination, and a truncation marker in the payload so the model knows content was dropped. Side-effecting tools take a caller-supplied idempotency key scoped to tenant and operation, and reject reuse with a different payload. Record tool inputs and retrieved-document snapshots so a run can be replayed.
 
-When tools are exposed through a protocol such as MCP, treat it as a versioned contract: capability negotiation, schema compatibility, transport auth and whose credentials act, per-tool timeouts, and server-side authorization at the execution boundary. The protocol decides how the model reaches a tool, never what it may do for the current user or tenant. The MCP specification states that tool descriptions are untrusted unless obtained from a trusted server, and that hosts must obtain explicit user consent before invoking a tool.
+When tools are exposed through a protocol such as MCP, treat it as a versioned contract: capability negotiation, schema compatibility, transport auth and whose credentials act, per-tool timeouts, and server-side authorization at the execution boundary. The protocol decides how the model reaches a tool, never what it may do for the current user or tenant. The MCP specification requires clients to treat tool annotations as untrusted unless they come from a trusted server, and expects a human always to be in the loop with the ability to deny a tool invocation, with clients presenting a confirmation prompt to the user for sensitive operations.
 
 ## Context window budgeting
 

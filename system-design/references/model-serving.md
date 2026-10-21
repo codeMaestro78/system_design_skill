@@ -57,8 +57,8 @@ Idle accelerator time is pure cost, so measure utilization first: busy time over
 cost_per_million_tokens = accelerator_hourly_cost * hours / (tokens_per_hour / 1e6)
 
 Illustrative example with assumed inputs, not vendor pricing:
-40 tokens/s decode at batch 8 -> about 115M tokens/hour for that accelerator
-at an assumed hourly cost C, cost per million tokens = C / 115
+40 tokens/s decode per sequence at batch 8 -> 320 tokens/s aggregate -> about 1.15M tokens/hour for that accelerator
+at an assumed hourly cost C, cost per million tokens = C / 1.15
 ```
 
 The break-even point is a property of cold-start time, hourly cost, and the average request, so compute it rather than assuming the managed default is cheaper.

@@ -1,6 +1,7 @@
 # API and contract design
 
 Use this for: designing an interface another team or an external client consumes - resource shape, versioning, idempotency, pagination, error contracts, and rate limits.
+Sources: [RFC 9110 HTTP semantics](sources.md#api-and-protocol-design), [RFC 9457 problem details](sources.md#api-and-protocol-design), [OpenAPI Specification](sources.md#api-and-protocol-design), [Microsoft API design](sources.md#api-and-protocol-design), [Pact consumer-driven contract testing](sources.md#api-and-protocol-design).
 
 ## Begin with consumers and semantics
 

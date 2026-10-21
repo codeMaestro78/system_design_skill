@@ -2,6 +2,8 @@
 
 Use this for: explaining a concept to a learner, coaching a system-design interview, and scoring a candidate. This file is the canonical guide for the learning, hint, and interview-coaching method used across the reference set.
 
+Sources: [Google SRE books](sources.md#sre-reliability-operations), [AWS Well-Architected](sources.md#architecture-foundations), [Azure Architecture Center](sources.md#architecture-foundations), [Team Topologies key concepts](sources.md#team-topology-and-organisation).
+
 ## Learning mode
 
 For a concept, explain in this order: plain definition; problem it solves; concrete example; placement in an architecture; alternatives; trade-offs; failure modes; operational implications; related concepts. Introduce only needed terminology and expand acronyms once. Use a compact diagram or table when it improves understanding, and only when relationships are otherwise hard to follow. Ask the learner to apply the idea when they want practice.
