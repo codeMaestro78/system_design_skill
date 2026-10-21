@@ -9,6 +9,8 @@ Sources: [PostgreSQL transactions and indexes](sources.md#data-cloud-container-a
 ## Decision rules
 
 - Name the authoritative source for every fact and its owner before choosing a store. A cache, replica, search index, or warehouse is derived data until proven otherwise.
+- A database is a design choice, not the domain model. Use one datastore where it meets needs and add specialized stores only for a measured or clear workload requirement, because polyglot persistence adds backup, access-control, schema, observability, and on-call burden.
+- Fix the data classes before choosing stores: classification drives encryption, retention, and access design.
 - Cache-aside gives stale reads, not strong consistency. It does not fix a slow write path, and cache entries can leak across tenants unless keys are tenant-scoped. Never promote a cache to source of truth without an invariant-preserving design.
 - Replicas are not backups. Plan separately for corruption, accidental deletion, ransomware, and operator error, with tested restores.
 - A read-then-insert inside a transaction still races for a no-conflict invariant. Use a database constraint, serializable execution with whole-transaction retry, or a resource row that every writer locks. A lock row must exist before it is used, and locking only matching rows protects nothing when the interval is empty.
@@ -21,4 +23,4 @@ Sources: [PostgreSQL transactions and indexes](sources.md#data-cloud-container-a
 - Storage choice, invariants, indexes, and lifecycle detail: [data architecture](data-architecture.md).
 - Outbox, saga, and cache patterns: [pattern catalog](pattern-catalog.md).
 - Delivery semantics and failure behavior: [distributed systems](distributed-systems.md).
-- Restore drills, RPO/RTO, and incident handling: [reliability and operations](reliability-operations.md).
+- Restore drills, RPO/RTO, and incident handling: [reliability, performance, and production operations](reliability-operations.md).

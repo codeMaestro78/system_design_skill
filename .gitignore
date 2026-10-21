@@ -24,6 +24,12 @@ htmlcov/
 .mypy_cache/
 .ruff_cache/
 
+# Scored evaluation runs.
+# evals/evaluate.py writes scored runs here, and a scored run contains the raw
+# agent response for every case. Some cases (for example the secret-in-repo
+# case) quote credentials on purpose, so these files must never be committed.
+evals/results/
+
 # Patch leftovers
 *.rej
 *.orig

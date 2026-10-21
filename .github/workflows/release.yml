@@ -20,6 +20,9 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          # Tags are fetched so the release guard below can see a tag that
+          # already exists in the repository.
+          fetch-tags: true
       - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
@@ -27,35 +30,62 @@ jobs:
           cache-dependency-path: requirements-dev.txt
       - name: Install check dependencies
         run: python -m pip install --disable-pip-version-check PyYAML==6.0.3
-      - name: Install development tooling
-        continue-on-error: true
-        run: python -m pip install --disable-pip-version-check -r requirements-dev.txt
       - run: python scripts/check_skill.py
       - run: python evals/evaluate.py validate
       - run: python -m unittest discover -s tests -v
       - name: Read version
         id: version
+        env:
+          VERSION_FILE: VERSION
         run: |
-          version="$(tr -d '[:space:]' < VERSION)"
+          version="$(tr -d '[:space:]' < "$VERSION_FILE")"
           test -n "$version"
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-      - name: Verify tag matches version
-        if: startsWith(github.ref, 'refs/tags/')
-        run: |
-          tag="${GITHUB_REF#refs/tags/}"
-          if [ "$tag" != "v${{ steps.version.outputs.version }}" ]; then
-            echo "Tag $tag does not match VERSION ${{ steps.version.outputs.version }}" >&2
+          if ! printf '%s' "$version" | grep -Eq '^[0-9A-Za-z.+-]+$'; then
+            echo "::error::VERSION contains characters that are not allowed in a release version."
             exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Verify release target
+        # No `if:` guard: this runs for a tag push and for a manual run alike,
+        # so a manual release can never skip the version check.
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          REF: ${{ github.ref }}
+        run: |
+          set -euo pipefail
+          target="v$VERSION"
+          ref="${REF#refs/tags/}"
+          if [ "$ref" != "$REF" ]; then
+            # Tag-triggered run: the pushed tag must be the version recorded
+            # in the VERSION file.
+            if [ "$ref" != "$target" ]; then
+              echo "::error::Tag '$ref' does not match VERSION '$target'."
+              exit 1
+            fi
+            echo "Releasing tag '$ref'."
+          else
+            # Manual run: this workflow picks the release tag itself, so the
+            # tag must not exist yet. Publishing over an existing tag would
+            # attach this build to a stale release, and a re-run would
+            # republish over the tag the first run created.
+            if git rev-parse -q --verify "refs/tags/$target" >/dev/null 2>&1; then
+              echo "::error::Tag '$target' already exists; refusing to publish this build over it. Bump VERSION, or remove the existing tag first."
+              exit 1
+            fi
+            echo "Manual run: releasing '$target' from '$REF'."
           fi
       - name: Build package
         run: |
           python scripts/package.py --check
           python scripts/package.py --out dist
       - name: Publish release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: v${{ steps.version.outputs.version }}
           name: system-design ${{ steps.version.outputs.version }}
+          # Pins a newly created tag to the commit that was checked out and
+          # built, instead of the repository default branch.
+          target_commitish: ${{ github.sha }}
           files: dist/system-design.zip
           fail_on_unmatched_files: true
           generate_release_notes: true

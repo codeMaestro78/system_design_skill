@@ -1,5 +1,7 @@
 # Cloud, containers, and platform architecture
 
+Use this for: choosing where and how a workload runs - managed-service adoption, quotas and serverless economics, container and orchestration choices, multi-region placement, and egress cost.
+
 ## Placement and responsibility
 
 Select on-premises, public cloud, hybrid, edge, or managed/serverless placement from latency, data residency, connectivity, security control, skills, procurement, cost, and recovery requirements. For each managed product, identify provider responsibility, customer configuration responsibility, service limits, quotas, failure modes, data location, support model, and exit/migration path. Provider architecture frameworks are useful, but their service recommendations are not technology-neutral facts.

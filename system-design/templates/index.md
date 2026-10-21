@@ -9,7 +9,7 @@ Rules for use:
 - Replace every `<placeholder>` and every `TBD`. Do not ship a template with a placeholder still in it.
 - Delete sections that do not apply and say why in the scope line, or mark them "Out of scope: <reason>". A missing section with a stated reason is a decision; an unfilled section is not.
 - Fill from observed evidence. Label anything else **Given**, **Assumed**, **Estimated**, or **Open**, and give every estimate a source or a validation owner.
-- Link from these templates to [the design brief structure](../references/design-brief.md) for guidance, and to [the source guide](../references/sources.md) when a claim needs a current primary reference.
+- Link the delivered artifact to [the design brief structure](../references/design-brief.md) for guidance, and to [the source guide](../references/sources.md) when a claim needs a current primary reference.
 
 ## Routing table
 

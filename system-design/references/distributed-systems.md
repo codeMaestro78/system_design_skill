@@ -1,5 +1,7 @@
 # Distributed systems and messaging
 
+Use this for: reasoning about partial failure across process, database, queue, and external boundaries - delivery semantics, idempotency, outbox and saga patterns, quorum arithmetic, and the scope of an exactly-once claim.
+
 ## Assume partial failure
 
 Remote calls can be delayed, lost, duplicated, reordered, or complete while the caller times out. Clocks drift, DNS/configuration change, certificates expire, and dependencies become overloaded. Specify connection/request deadlines, cancellation propagation, bounded in-flight work, connection pooling, failure detection, and what the user sees. A timeout bounds waiting; it does not cancel a remote side effect unless cancellation is explicitly supported.

@@ -1,6 +1,6 @@
 # Model serving and inference infrastructure
 
-Use this for: the inference tier itself, its latency and cost structure, and rollout of model or serving changes. Agent-level design is covered in [AI and agent systems](ai-systems.md). Sources: [OWASP LLM risks](sources.md#ai-and-agent-systems), [NIST AI Risk Management Framework](sources.md#ai-and-agent-systems), [Google SRE on non-abstract design](sources.md#sre-reliability-operations), [AWS Builders' Library](sources.md#first-party-engineering-case-studies).
+Use this for: the inference tier itself, its latency and cost structure, and rollout of model or serving changes. Agent-level design is covered in [AI and agent system architecture](ai-systems.md). Sources: [OWASP LLM risks](sources.md#ai-and-agent-systems), [NIST AI Risk Management Framework](sources.md#ai-and-agent-systems), [Google SRE on non-abstract design](sources.md#sre-reliability-operations), [AWS Builders' Library](sources.md#first-party-engineering-case-studies).
 
 ## Inference is a separate tier
 

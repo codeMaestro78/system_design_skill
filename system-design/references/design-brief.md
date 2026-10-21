@@ -71,7 +71,7 @@ Assets, actors, entry points, trust boundaries, data flows, and tenant boundarie
 - Deployment, rollout/rollback, on-call ownership, incident process
 - Capacity, quotas, cost signals, retention, exit considerations
 
-Detail: [reliability and operations](reliability-operations.md).
+Detail: [reliability, performance, and production operations](reliability-operations.md).
 
 ## 10. Risk register
 
@@ -128,6 +128,24 @@ Required for Tier C and any Tier B that changes a system of record.
 
 One worked request, response, and error-catalogue example, not a list of field names, with the unit and currency of every numeric field, required versus optional and what an omitted field means, the default and maximum page size, the error codes a client can branch on, the server deadline, and the idempotency key scope, retention, and mismatch rule. Attach the machine-readable schema and the compatibility check. Detail: [API contract](../templates/api-contract.md).
 
+    POST /v1/payments HTTP/1.1
+    Idempotency-Key: 7f3c1a52-9d0e-4f6b-8a11-2c4d6e8f0a13
+    { "order_id": "ord_8812", "amount": { "value": 4250, "currency": "USD" },
+      "payment_method_id": "pm_5510" }
+
+    HTTP/1.1 201 Created
+    Location: /v1/payments/pay_9f21
+    { "id": "pay_9f21", "status": "pending",
+      "amount": { "value": 4250, "currency": "USD" } }
+
+    HTTP/1.1 409 Conflict
+    Content-Type: application/problem+json
+    { "type": "https://errors.example.com/idempotency-key-reuse",
+      "status": 409, "code": "idempotency_key_payload_mismatch",
+      "detail": "The key was first used with a different request body.",
+      "instance": "/v1/payments", "request_id": "req_1a77",
+      "retryable": false }
+
 ## 18. Ownership table
 
 | Component or data | Owning team | On-call | Escalation | Data owned and class |
@@ -144,7 +162,7 @@ Required for Tier C when an agent acts rather than only producing text for a hum
 - Tool inventory: per tool, what it reads, what it changes, who owns the resource, the trust boundary crossed, whether the effect is reversible, the blast radius of misuse, including tools reached indirectly through an API.
 - Approval gates: which actions pause, what the approver sees, the default on timeout, how long an approval stays valid.
 - Evaluation plan: task set, pass criteria, production shadow period, regression gate, who blocks a release. Offline benchmarks do not measure production behaviour.
-- Injection and exfiltration posture: what is untrusted input, whether retrieved or user text can carry instructions, what the model may never reveal, the egress boundary, the logging policy. Failure behaviour, audit, and a stop mechanism complete it. Detail: [AI and agent systems](ai-systems.md).
+- Injection and exfiltration posture: what is untrusted input, whether retrieved or user text can carry instructions, what the model may never reveal, the egress boundary, the logging policy. Failure behaviour, audit, and a stop mechanism complete it. Detail: [AI and agent system architecture](ai-systems.md).
 
 ## 20. ADR index
 

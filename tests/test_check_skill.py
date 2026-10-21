@@ -54,19 +54,37 @@ Fixture body.
 - [Other](references/other.md)
 """
 
-BASE_GUIDE = """# Guide
+BASE_GUIDE = (
+    """# Guide
 
 ## Section One
 
-Guide text.
-"""
-
-BASE_OTHER = """# Other
+Guide text. """
+    + (
+        "Filler prose so the fixture clears the minimum word floor that "
+        "guards against a truncated reference file. " * 12
+    )
+    + """
 
 ## Section Two
 
-Other text.
+More guide text.
 """
+)
+
+BASE_OTHER = (
+    """# Other
+
+## Section Two
+
+Other text. """
+    + (
+        "Filler prose so the fixture clears the minimum word floor that "
+        "guards against a truncated reference file. " * 12
+    )
+    + """
+"""
+)
 
 BASE_OPENAI = """interface:
   display_name: System Design
@@ -468,6 +486,27 @@ class BudgetTests(PackageTestCase):
             errors,
         )
 
+    def test_truncated_reference_is_reported(self):
+        """A reference truncated to a stub must fail the package check.
+
+        Every link and heading rule still passes for an emptied file, so the
+        size floor is the only thing that catches it.
+        """
+        self.write("references/guide.md", "# Guide\n\nStub.\n")
+        errors = self.errors()
+        self.assertTrue(
+            any("word floor" in error and "references/guide.md" in error for error in errors),
+            errors,
+        )
+
+    def test_reference_above_the_floor_is_accepted(self):
+        self.write("references/guide.md", "# Guide\n\n" + ("word " * 200))
+        errors = self.errors()
+        self.assertFalse(
+            any("word floor" in error and "references/guide.md" in error for error in errors),
+            errors,
+        )
+
     def test_reference_within_the_word_budget_is_accepted(self):
         self.write("references/guide.md", "# Guide\n\n" + ("word " * 100))
         errors = self.errors()
@@ -514,6 +553,33 @@ class ReferenceTests(PackageTestCase):
         )
         errors = self.errors()
         self.assertNotIn(expected, errors)
+
+    def test_canonical_guide_link_must_be_marked(self):
+        """A companion link without the marker is reported."""
+        self.write(
+            "references/architecture-fundamentals.md",
+            "# Architecture foundations\n\nSee the [method](architecture-method.md).\n",
+        )
+        self.write("references/architecture-method.md", "# Architecture method\n\nDeep.\n")
+        self.append_skill(
+            "\n- [Fundamentals](references/architecture-fundamentals.md)\n"
+            "- [Method](references/architecture-method.md)\n"
+        )
+        errors = self.errors()
+        self.assertTrue(
+            any("architecture-fundamentals.md" in error and "**Canonical guide:**" in error for error in errors),
+            errors,
+        )
+
+        self.write(
+            "references/architecture-fundamentals.md",
+            "# Architecture foundations\n\n**Canonical guide:** [method](architecture-method.md).\n",
+        )
+        errors = self.errors()
+        self.assertFalse(
+            any("architecture-fundamentals.md" in error and "**Canonical guide:**" in error for error in errors),
+            errors,
+        )
 
 
 class TemplateTests(PackageTestCase):

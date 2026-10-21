@@ -2,25 +2,49 @@ name: Validate system-design skill
 
 on:
   push:
+    # Branch pushes are filtered by the paths below. Tag pushes are not
+    # filtered by paths (GitHub does not evaluate path filters for tags), so
+    # the tag pattern below is what keeps the two workflows symmetric:
+    # release.yml only publishes `v*` tags, and so does this workflow.
+    branches:
+      - '**'
+    tags:
+      - 'v*'
     paths:
       - 'system-design/**'
       - 'scripts/**'
       - 'evals/**'
       - 'tests/**'
+      - 'examples/**'
       - '.github/**'
       - 'requirements-dev.txt'
       - 'pyproject.toml'
+      - 'VERSION'
+      - 'CHANGELOG.md'
+      - 'LICENSE'
+      - 'NOTICE'
       - 'README.md'
+      - 'SECURITY.md'
+      - 'CONTRIBUTING.md'
+      - 'CODE_OF_CONDUCT.md'
   pull_request:
     paths:
       - 'system-design/**'
       - 'scripts/**'
       - 'evals/**'
       - 'tests/**'
+      - 'examples/**'
       - '.github/**'
       - 'requirements-dev.txt'
       - 'pyproject.toml'
+      - 'VERSION'
+      - 'CHANGELOG.md'
+      - 'LICENSE'
+      - 'NOTICE'
       - 'README.md'
+      - 'SECURITY.md'
+      - 'CONTRIBUTING.md'
+      - 'CODE_OF_CONDUCT.md'
   workflow_dispatch:
 
 concurrency:
@@ -29,8 +53,19 @@ concurrency:
 
 jobs:
   validate:
-    runs-on: ubuntu-latest
+    name: Validate (Python ${{ matrix.python-version }})
+    # Pinned to ubuntu-24.04 rather than ubuntu-latest: the matrix needs
+    # Python 3.9, and the setup-python manifest publishes a 3.9 build for
+    # linux-22.04 and linux-24.04 only. ubuntu-latest currently maps to
+    # 24.04 but is allowed to drift to 26.04, where no 3.9 build exists.
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        # The scripts declare a Python 3.9 floor (see [tool.system-design] in
+        # pyproject.toml). Both ends of that range are exercised here.
+        python-version: ['3.9', '3.12']
     permissions:
       contents: read
     steps:
@@ -39,29 +74,24 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-python@v7
         with:
-          python-version: '3.12'
+          python-version: ${{ matrix.python-version }}
           cache: pip
           cache-dependency-path: requirements-dev.txt
       - name: Install check dependencies
         run: python -m pip install --disable-pip-version-check PyYAML==6.0.3
-      - name: Install development tooling
-        continue-on-error: true
-        run: python -m pip install --disable-pip-version-check -r requirements-dev.txt
+
+      # --- Required gates -------------------------------------------------
+      # These four steps are the gates. None of them may be skipped or
+      # downgraded to continue-on-error, and they all run before any optional
+      # tooling is installed, so a tooling failure can never hide them.
       - run: python scripts/check_skill.py
       - run: python evals/evaluate.py validate
       - run: python -m unittest discover -s tests -v
-      - name: Lint
-        continue-on-error: true
-        run: ruff check .
-      - name: Coverage
-        continue-on-error: true
-        run: |
-          coverage run -m unittest discover -s tests
-          coverage report
       - name: Package
         run: |
           python scripts/package.py --check
           python scripts/package.py --out dist
+
       - name: Upload package artifact
         if: startsWith(github.ref, 'refs/tags/')
         uses: actions/upload-artifact@v7
@@ -69,8 +99,44 @@ jobs:
           name: system-design-package
           path: dist/
           if-no-files-found: error
+
+      # --- Optional tooling ------------------------------------------------
+      # Installed after the required gates on purpose: if this install fails,
+      # the checks above have already run and reported.
+      - name: Install development tooling
+        continue-on-error: true
+        run: python -m pip install --disable-pip-version-check -r requirements-dev.txt
+      - name: Lint
+        continue-on-error: true
+        run: |
+          if command -v ruff >/dev/null 2>&1; then
+            ruff check .
+          else
+            echo "::notice::Skipped: ruff is not installed (development tooling install failed)."
+          fi
+      - name: Coverage
+        # Advisory only: this step is continue-on-error, so the threshold can
+        # never block the required gates above.
+        continue-on-error: true
+        run: |
+          if command -v coverage >/dev/null 2>&1; then
+            coverage run -m unittest discover -s tests
+            coverage report --fail-under=70
+          else
+            echo "::notice::Skipped: coverage is not installed (development tooling install failed)."
+          fi
       - name: Dependency review
-        if: github.event_name == 'pull_request'
+        # Non-blocking on purpose. This repository has no recognised dependency
+        # manifest: requirements-dev.txt is not a manifest GitHub's dependency
+        # graph understands, and pyproject.toml declares no [project]
+        # dependencies. The graph is therefore empty and the API answers 404
+        # ("could not obtain dependency data") or 403 ("dependency review is not
+        # supported on this repository"), both of which fail the step. The step
+        # is kept as an early warning for the day a manifest lands, and it
+        # only runs for pull requests opened from this repository, because a
+        # fork pull request has no dependency graph to compare against.
+        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+        continue-on-error: true
         uses: actions/dependency-review-action@v5
         with:
           fail-on-severity: moderate

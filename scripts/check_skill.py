@@ -46,6 +46,9 @@ MAX_COMPATIBILITY_CHARS = 500
 MAX_SHORT_DESCRIPTION_CHARS = 120
 MAX_SKILL_LINES = 500
 MAX_REFERENCE_WORDS = 4000
+#: A reference shorter than this has almost certainly been truncated. The
+#: shortest legitimate guide in the corpus is the compact first-pass pages.
+MIN_REFERENCE_WORDS = 150
 
 SVG_NAMESPACE = "http://www.w3.org/2000/svg"
 UNSAFE_SVG_ELEMENTS = frozenset(
@@ -363,7 +366,13 @@ def check_frontmatter(metadata: dict, skill: Path, body: str, errors: list[str])
 
 
 def check_size_budgets(text: str, skill: Path, errors: list[str]) -> None:
-    """Enforce the SKILL.md line budget and the reference word budget."""
+    """Enforce the SKILL.md line budget and the reference word budget.
+
+    The lower bound matters as much as the upper one: a reference file that
+    has been truncated to a stub still satisfies every link and heading rule,
+    so without a floor a whole guide can be emptied without the package check
+    noticing.
+    """
     lines = text.splitlines()
     if len(lines) > MAX_SKILL_LINES:
         errors.append(f"SKILL.md must be under {MAX_SKILL_LINES} lines (got {len(lines)})")
@@ -377,6 +386,11 @@ def check_size_budgets(text: str, skill: Path, errors: list[str]) -> None:
         words = len(source.split())
         if words > MAX_REFERENCE_WORDS:
             errors.append(f"{relative(reference, skill)}: {words} words exceeds the {MAX_REFERENCE_WORDS} word budget")
+        if words < MIN_REFERENCE_WORDS:
+            errors.append(
+                f"{relative(reference, skill)}: only {words} words, below the {MIN_REFERENCE_WORDS} word floor; "
+                "the file looks truncated"
+            )
 
 
 # ---------------------------------------------------------------------------
@@ -461,7 +475,12 @@ def check_reference_links(skill: Path, direct: set[Path], errors: list[str]) -> 
 
 
 def check_canonical_companions(skill: Path, edges: dict[Path, set[Path]], errors: list[str]) -> None:
-    """Every compact guide must point at its canonical detailed companion."""
+    """Every compact guide must point at its canonical detailed companion.
+
+    The pointer must use the ``**Canonical guide:**`` marker so a reader (and
+    an agent) can see at a glance which file is the source of truth, rather
+    than having to infer it from the surrounding prose.
+    """
     references = skill / "references"
     for compact, detailed in CANONICAL_COMPANIONS.items():
         compact_path = references / compact
@@ -469,6 +488,9 @@ def check_canonical_companions(skill: Path, edges: dict[Path, set[Path]], errors
         if not compact_path.is_file() or not detailed_path.is_file():
             continue
         if detailed_path.resolve() in edges.get(compact_path.resolve(), set()):
+            text, _ = read_text(compact_path)
+            if text is not None and "**Canonical guide:**" not in text:
+                errors.append(f'references/{compact}: the canonical guide link must be marked "**Canonical guide:**"')
             continue
         errors.append(f"references/{compact}: does not link its canonical guide references/{detailed}")
 

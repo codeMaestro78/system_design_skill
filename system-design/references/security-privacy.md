@@ -32,7 +32,7 @@ Review dependency and base-image provenance/updates, CI/CD identities, artifact 
 
 ## Detection and assurance
 
-Audit identity, authorization failures, admin changes, exports, key/secret access, policy changes, and security events. Protect log integrity and restrict access; avoid recording unnecessary personal data. Plan alert/triage/containment/recovery, credential revocation, tenant isolation, evidence preservation, communication, and drills. Map important threats to controls and tests: negative authZ/tenant tests, secrets/dependency checks, infrastructure policy, deletion/restore exercises, tabletop or penetration testing proportional to risk. Operate the resulting alert and drill practice with [reliability and operations](reliability-operations.md).
+Audit identity, authorization failures, admin changes, exports, key/secret access, policy changes, and security events. Protect log integrity and restrict access; avoid recording unnecessary personal data. Plan alert/triage/containment/recovery, credential revocation, tenant isolation, evidence preservation, communication, and drills. Map important threats to controls and tests: negative authZ/tenant tests, secrets/dependency checks, infrastructure policy, deletion/restore exercises, tabletop or penetration testing proportional to risk. Operate the resulting alert and drill practice with [reliability, performance, and production operations](reliability-operations.md).
 
 ## Trade-offs to state
 

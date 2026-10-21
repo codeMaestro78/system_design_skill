@@ -37,7 +37,7 @@ Design indexes from query plans and write costs; include selectivity, size, upda
 
 Document schema evolution, backward/forward compatibility, data backfills, dual-read/write windows, validation, lock impact, rollback versus forward repair, and old/new application coexistence. Plan retention, legal hold where applicable, deletion across replicas, indexes, caches, analytics, exports, and backups (including expiry limits). Minimize copies and restrict access.
 
-Define RPO/RTO and backup scope; encrypt and access-control backups; test point-in-time restore into an isolated environment; verify application-level consistency and restore the service, not just files. Record owner and drill interval. A green backup job is not proof of recoverability. Restore drills and disaster recovery are covered in [reliability and operations](reliability-operations.md).
+Define RPO/RTO and backup scope; encrypt and access-control backups; test point-in-time restore into an isolated environment; verify application-level consistency and restore the service, not just files. Record owner and drill interval. A green backup job is not proof of recoverability. Restore drills and disaster recovery are covered in [reliability, performance, and production operations](reliability-operations.md).
 
 ## Data governance and quality
 

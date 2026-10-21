@@ -2,7 +2,7 @@
 
 > Sample output produced with the `system-design` skill for the `launch-readiness` eval case in `evals/cases.json`. Saved as an illustration of answer shape and reasoning, not as a claim of measured improvement. See `evals/README.md` for how to reproduce and score behavior cases.
 
-**Prompt:** A clinic plans to launch its appointment booking service publicly next week. Unit and integration tests pass. Daily database backups are configured, but nobody has restored one or checked that restored bookings are usable. This release renames a database column used by the previous application version; the team says it can roll back by deploying the old image. Monitoring shows CPU and request count, but there is no alert for failed bookings or named incident responder. Load testing covered average traffic only. Based only on this evidence, should the team launch publicly? Separate verified facts from unproven claims, give the minimum checks and owners needed before a broad launch, and describe a safe rollout and stop conditions. Do not redesign the whole system.
+**Prompt:** Our clinic is launching its appointment-booking service publicly next week. Unit and integration tests pass. Daily database backups are configured, but nobody has ever restored one. This release renames a database column that the previous application version still uses, and the team says the old image can simply be redeployed to roll back. Monitoring shows CPU and request counts, with no signal for failed bookings and no named on-call responder. Load testing covered average traffic only. Should we launch publicly next week?
 
 ---
 

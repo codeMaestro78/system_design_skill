@@ -7,6 +7,10 @@
 # `Path.is_relative_to` was added in 3.9 and is used by the package checks.
 
 [tool.system-design]
+# Not PEP 621 metadata: this repository is not an installable package, so
+# there is no `[project]` table and no `[build-system]` table either. The
+# value is a CI-only convention, enforced by the `validate-skill` workflow,
+# which runs the required checks on Python 3.9 and on Python 3.12.
 requires-python = ">=3.9"
 
 [tool.ruff]
@@ -15,11 +19,3 @@ line-length = 120
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
-
-[tool.mypy]
-python_version = "3.9"
-files = ["scripts", "evals", "tests"]
-ignore_missing_imports = true
-warn_unused_configs = true
-warn_redundant_casts = true
-no_implicit_optional = true

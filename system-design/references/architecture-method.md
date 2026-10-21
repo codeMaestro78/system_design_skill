@@ -65,7 +65,7 @@ An ADR contains:
 - **Owner**: the person or role accountable for the decision and for revisiting it.
 - **Date and revisit trigger**: when it was decided and the event, measurement, or review that should reopen it.
 
-Use ADRs for durable decisions. Revisit when workload, team, security posture, cost, or platform changes. Record operational consequences in [reliability and operations](reliability-operations.md) and keep the ADR short enough to be read.
+Use ADRs for durable decisions. Revisit when workload, team, security posture, cost, or platform changes. Record operational consequences in [reliability, performance, and production operations](reliability-operations.md) and keep the ADR short enough to be read.
 
 ## Decomposition and diagrams
 

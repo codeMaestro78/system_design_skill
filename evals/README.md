@@ -2,12 +2,22 @@
 
 These cases test decisions the skill should improve. They do not enforce one architecture or guarantee correctness. Run the [package checks](../scripts/check_skill.py) in CI; run behavior cases with an agent that has the local skill loaded. The fixture is intentionally incomplete and must remain read-only during an evaluation.
 
+`python evals/evaluate.py validate` checks the case definitions and the fixture tree. The fixture must contain exactly these files, and nothing else:
+
+```
+.env  .github/workflows/ci.yml  .gitignore  Dockerfile  README.md  docker-compose.yml
+docs/ARCHITECTURE.md  migrations/001_init.sql  openapi.yaml  package.json
+src/orders.js  test/orders.test.js
+```
+
+A file that is missing is reported as `Partial repository fixture is missing <path>` and a file that is not in that list is reported as `Partial repository fixture has an unexpected file: <path>`. The fixture is shared by every case, so a change to it changes what the reviewer can see; keep it in step with the cases instead of quietly adding files.
+
 Passing this gate is a **local regression gate**, not a claim of general system-design accuracy. The package checks cannot grade behavior: they verify metadata, links, and structure, while these cases verify what an agent actually does with the skill loaded. Report the two forms of validation separately.
 
 ## Run a case
 
 1. `python evals/evaluate.py list` to choose a case.
-2. Load `system-design/SKILL.md` through the target agent's normal skill mechanism. In a fresh conversation, submit only the output of `python evals/evaluate.py prompt CASE_ID`. Do not show the agent `cases.json`, this rubric, or earlier responses.
+2. Load `system-design/SKILL.md` through the target agent's normal skill mechanism. In a fresh conversation, submit only the output of `python evals/evaluate.py prompt CASE_ID`. Do not show the agent `cases.json`, this rubric, or earlier responses. The command prints the prompt text itself, with no trailing newline, so the bytes you submit are the bytes the prompt digest covers.
 3. Save the agent's full answer to a file outside the repository, for example `/tmp/system-design-answer.md`. You can run `cat > /tmp/system-design-answer.md`, paste the answer, and press Ctrl+D. Check it exists with `test -s /tmp/system-design-answer.md`. The `prompt` command does not create this file. For `interview-coaching`, score only the first assistant reply.
 4. Generate a review form: `python evals/evaluate.py template CASE_ID /tmp/system-design-answer.md > /tmp/system-design-review.json`. Add `--route compact` or `--route detailed` when the run uses a reference comparison route. The form is frozen against the exact skill revision, prompt, route, and response bytes you are about to review.
 5. Read the response and the case expectations, then fill in the form using the rubric below.
@@ -37,10 +47,11 @@ Score all criteria first, then evaluate the red flags. A triggered flag is a cla
 
 ## Red flags
 
-Each red flag in `cases.json` has an `id` and the false claim to detect. Two rules matter:
+Each red flag in `cases.json` has an `id` and the false claim to detect. Three rules matter:
 
 - **Every flag needs evidence, even when it is not triggered.** Record where you looked. A flag left without evidence is a channel a reviewer can neutralise for free, so the scoring refuses it: `red flag <id>: record where you looked, even if not triggered`.
-- **The flag id must match the case.** Flags are bound by id, not by position, so reordering, renaming, or swapping flags is rejected (`red flag id mismatch`). The `text` in the form is the claim to detect; do not rewrite it.
+- **The flag id must match the case.** Flags are bound by id, not by position, so reordering, renaming, or swapping flags is rejected (`red flag id mismatch`).
+- **The flag text must match the case.** The `text` in the form is the claim to detect, and the scoring compares it with the case definition: rewriting it is rejected with `red flag <id>: text does not match the case definition`. Leading and trailing whitespace is ignored. A reviewer cannot replace the claim with a softer one and still pass.
 
 A triggered flag fails the review regardless of the criterion scores.
 
@@ -56,7 +67,9 @@ A review is only reproducible if it names what it was scored against. The `run_m
 | `reviewer` | who scored it |
 | `date_utc` | date of the run, `YYYY-MM-DD` |
 
-`python evals/evaluate.py digest` prints the current skill digest. If `skill_sha256` does not match the skill in the working tree, the score is refused with `assessment was scored against a different version of the skill`: the answer was produced against different guidance, so it cannot be compared with today's. `model`, `reviewer`, and `date_utc` must all be non-empty (`run_manifest: model/reviewer/date_utc are required`); without them nobody can repeat or attribute the run.
+`prompt_sha256` is the SHA-256 of the prompt text with the machine-specific fixture directory folded back to `{{FIXTURE_DIR}}`, so the same prompt has the same digest on every machine. The `prompt` command prints exactly that text, so the bytes you submit are the bytes the digest covers, apart from the fixture path substitution.
+
+`python evals/evaluate.py digest` prints the current skill digest. If `skill_sha256` does not match the skill in the working tree, the score is refused with `assessment was scored against a different version of the skill`: the answer was produced against different guidance, so it cannot be compared with today's. `model`, `reviewer`, and `date_utc` must all be non-empty (`run_manifest: model/reviewer/date_utc are required`); without them nobody can repeat or attribute the run. Each missing field is reported separately, so one empty field does not hide the next.
 
 The response hash covers the route, the prompt, and the response bytes together, so an answer scored under the wrong route or against a different prompt is detected.
 
@@ -72,14 +85,18 @@ Append one row per scored run to `evals/results/<date>-<case>-<route>.json`:
 python evals/evaluate.py baseline /tmp/system-design-review.json /tmp/system-design-answer.md
 ```
 
-The stored file keeps the manifest, the assessment, and a copy of the response, so a later run can be diffed against it:
+The stored file keeps the manifest, the assessment, and a copy of the response, so a later run can be diffed against it. The response is stored base64 encoded, so a response that is not valid UTF-8 round-trips byte for byte and `report` can re-verify its hash later. The date, case id, and route come from the assessment, so each one is reduced to a single safe path component before the file name is built, and the file is refused if it would land outside `evals/results/`.
+
+`baseline` exits nonzero when the review did not pass, so it can gate a job like the other commands. Pass `--allow-fail` to record a failing run and still exit 0; the stored verdict is unchanged either way.
+
+To compare two runs of the same case:
 
 ```
 python evals/evaluate.py diff evals/results/2026-10-21-payment-queue-automatic.json \
                          evals/results/2026-11-04-payment-queue-automatic.json
 ```
 
-`diff` reports the movement in total/maximum and per criterion, and exits nonzero when the new run scores lower. **Baseline the first run** of a case, and treat a drop in total/maximum as a regression to investigate, not as noise.
+`diff` reports the movement in total/maximum and per criterion, and exits nonzero when the new run is a regression. It says which kind of regression it found: `REGRESSION: the new run scores lower than the old run` for a lower total, and `REGRESSION: the new run does not pass where the old run passed` for a run that stopped passing without losing points, for example because a red flag now triggers. `diff` refuses to compare two different cases (`Cannot diff two different cases`) and exits nonzero: the criteria of two cases are not comparable. **Baseline the first run** of a case, and treat a drop in total/maximum as a regression to investigate, not as noise.
 
 To keep a full copy of one run (prompt, response, assessment, manifest) in a directory:
 
@@ -87,13 +104,17 @@ To keep a full copy of one run (prompt, response, assessment, manifest) in a dir
 python evals/evaluate.py archive /tmp/system-design-review.json /tmp/system-design-answer.md
 ```
 
+`archive` exits nonzero when the review did not pass, and `--allow-fail` records the run and exits 0 instead. It refuses a route the case does not define and a `--out` path that exists as a file, with a message rather than a traceback.
+
 To summarise many scored assessments in one table, and to fail a CI job when any of them failed:
 
 ```
 python evals/evaluate.py report evals/results
 ```
 
-The report table lists case, route, total/max, pass or fail, and the triggered flags, and exits nonzero when any run failed. Keep failed outputs and review notes outside the skill package or in the controlled evaluation archive; inspect privacy and licensing before sharing them.
+The report table lists case, route, total/max, pass or fail, and the triggered flags, and exits nonzero when any run failed. A run is re-scored against the skill in the working tree only when that is the revision it was scored against. When the skill has changed since, the report uses the verdict the run was given and notes `N assessment(s) were scored against a different skill revision`, because re-scoring it would report the skill edit rather than the run. A run that did not pass still fails the gate, whenever it was scored. A file that cannot be read as an assessment — truncated, unparsable, or holding something else — is named in a warning and fails the gate too: a truncated baseline must never pass silently.
+
+Keep failed outputs and review notes outside the skill package or in the controlled evaluation archive; inspect privacy and licensing before sharing them.
 
 ## Reference comparison routes
 

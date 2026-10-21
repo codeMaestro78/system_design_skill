@@ -9,8 +9,11 @@ a human review against that form. It never judges architecture quality itself.
 from __future__ import annotations
 
 import argparse
+import base64
+import binascii
 import hashlib
 import json
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -24,6 +27,63 @@ RESULTS = HERE / "results"
 CASE_KEYS = frozenset({"id", "mode", "prompt", "criteria", "red_flags", "reference_comparison"})
 ANCHOR_LEVELS = ("2", "1", "0")
 FIXTURE_PLACEHOLDER = "{{FIXTURE_DIR}}"
+
+# The fixture is a partial repository: it must stay exactly this tree, because
+# a case that claims to review a repository only means something when the
+# repository is the same everywhere. A missing file changes what the reviewer
+# can see; an extra file lets a case quietly rely on something that is not
+# part of the fixture.
+FIXTURE_FILES = (
+    ".env",
+    ".github/workflows/ci.yml",
+    ".gitignore",
+    "Dockerfile",
+    "README.md",
+    "docker-compose.yml",
+    "docs/ARCHITECTURE.md",
+    "migrations/001_init.sql",
+    "openapi.yaml",
+    "package.json",
+    "src/orders.js",
+    "test/orders.test.js",
+)
+
+# Characters that are safe in a single path component of a result file name.
+UNSAFE_NAME_CHARS = re.compile(r"[^A-Za-z0-9._-]")
+NAME_LIMIT = 64
+
+
+# --------------------------------------------------------------------------- #
+# paths
+# --------------------------------------------------------------------------- #
+def _relative(path: Path) -> str:
+    """A path relative to the repository root when it is inside it."""
+    try:
+        return str(path.resolve().relative_to(ROOT))
+    except ValueError:
+        return str(path)
+
+
+def _safe_name(value: str, limit: int = NAME_LIMIT) -> str:
+    """A single path component that cannot escape its directory.
+
+    Every character outside ``[A-Za-z0-9._-]`` becomes ``-`` and the result is
+    truncated, so a value taken from an untrusted assessment can never add a
+    directory separator. A name that is only dots is replaced as well, so the
+    result is never the parent directory itself.
+    """
+    cleaned = UNSAFE_NAME_CHARS.sub("-", str(value))[:limit]
+    if not cleaned.strip("."):
+        cleaned = "-"
+    return cleaned
+
+
+def _within(directory: Path, target: Path) -> bool:
+    """True when ``target`` resolves inside ``directory``."""
+    try:
+        return target.resolve().is_relative_to(directory.resolve())
+    except (OSError, ValueError):
+        return False
 
 
 # --------------------------------------------------------------------------- #
@@ -74,6 +134,11 @@ def allowed_routes(case: dict) -> set[str]:
     if not isinstance(routes, dict):
         return {"automatic"}
     return {"automatic", *routes.keys()}
+
+
+def _filled(value) -> bool:
+    """True when a manifest field holds a non-empty string."""
+    return isinstance(value, str) and bool(value.strip())
 
 
 # --------------------------------------------------------------------------- #
@@ -153,8 +218,27 @@ def validate() -> list[str]:
         errors.extend(_validate_criteria(case))
         errors.extend(_validate_red_flags(case))
         errors.extend(_validate_routes(case))
-    if not FIXTURE.joinpath("src", "orders.js").is_file():
-        errors.append("Partial repository fixture is missing")
+    errors.extend(_validate_fixture())
+    return errors
+
+
+def _validate_fixture() -> list[str]:
+    """Check the partial repository fixture against its expected file tree.
+
+    The tree is walked with ``rglob`` so nested files are included, and every
+    file is compared with the expected set in both directions: a missing file
+    and an unexpected file are both errors.
+    """
+    errors: list[str] = []
+    if not FIXTURE.is_dir():
+        errors.append(f"Partial repository fixture is missing {_relative(FIXTURE)}")
+        return errors
+    present = {path.relative_to(FIXTURE).as_posix() for path in FIXTURE.rglob("*") if path.is_file()}
+    expected = set(FIXTURE_FILES)
+    for relative in sorted(expected - present):
+        errors.append(f"Partial repository fixture is missing {relative}")
+    for relative in sorted(present - expected):
+        errors.append(f"Partial repository fixture has an unexpected file: {relative}")
     return errors
 
 
@@ -303,11 +387,11 @@ def run_manifest_errors(case: dict, review: dict, route: str | None) -> list[str
             errors.append("run_manifest: prompt_sha256 is required")
         elif recorded != prompt_digest(case, route):
             errors.append("run_manifest: prompt_sha256 does not match the prompt for this case and route")
-    for field in ("model", "reviewer", "date_utc"):
-        value = manifest.get(field)
-        if not isinstance(value, str) or not value.strip():
-            errors.append("run_manifest: model/reviewer/date_utc are required")
-            break
+    missing = [field for field in ("model", "reviewer", "date_utc") if not _filled(manifest.get(field))]
+    if missing:
+        errors.append("run_manifest: model/reviewer/date_utc are required")
+        for field in missing:
+            errors.append(f"run_manifest: {field} is required")
     return errors
 
 
@@ -361,6 +445,7 @@ def evaluate_review(case: dict, review: dict, response: bytes | None) -> tuple[b
         errors.append("Assessment red_flags must be an array")
         return False, errors, total, maximum
     expected_ids = flag_ids(case)
+    expected_texts = flag_texts(case)
     if len(flags) != len(expected_ids):
         errors.append("Assessment red flags differ from case definition")
     submitted_ids: list[str | None] = []
@@ -389,7 +474,13 @@ def evaluate_review(case: dict, review: dict, response: bytes | None) -> tuple[b
         if not isinstance(flag, dict):
             continue
         identifier = flag.get("id")
-        label = identifier if isinstance(identifier, str) and identifier.strip() else str(index + 1)
+        expected_id = expected_ids[index] if index < len(expected_ids) else None
+        label = expected_id or (identifier if isinstance(identifier, str) and identifier.strip() else str(index + 1))
+        if index < len(expected_texts):
+            expected_text = expected_texts[index]
+            submitted_text = flag.get("text")
+            if not isinstance(submitted_text, str) or submitted_text.strip() != expected_text.strip():
+                errors.append(f"red flag {label}: text does not match the case definition")
         value = flag.get("triggered")
         if type(value) is not bool:
             errors.append(f"red flag {label}: triggered must be true or false")
@@ -418,10 +509,6 @@ def _display_path(path: Path) -> str:
         return str(path)
 
 
-def _read_text(path: Path) -> str:
-    return path.read_bytes().decode("utf-8", errors="replace")
-
-
 def _write_text(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(text.encode("utf-8"))
@@ -434,76 +521,121 @@ def _load_json(path: Path):
         return None
 
 
+def _decode_response(stored) -> bytes | None:
+    """Recover the exact response bytes from a stored run.
+
+    New runs keep the raw bytes base64 encoded, so a response that is not
+    valid UTF-8 still round-trips byte for byte. The plain ``response`` string
+    is the older, lossy shape and is still read for history.
+    """
+    if isinstance(stored, str) and stored:
+        return stored.encode("utf-8")
+    if isinstance(stored, dict):
+        encoded = stored.get("base64")
+        if isinstance(encoded, str):
+            try:
+                return base64.b64decode(encoded, validate=True)
+            except (binascii.Error, ValueError):
+                return None
+    return None
+
+
+def _encode_response(raw: bytes) -> dict:
+    """Store response bytes losslessly."""
+    return {"encoding": "base64", "base64": base64.b64encode(raw).decode("ascii")}
+
+
 def _entry_from_assessment(data: dict, response: bytes | None, source: Path) -> dict:
     return {"assessment": data, "response": response, "source": source, "manifest": None}
 
 
-def _entries_from_json(path: Path) -> list[dict]:
-    data = _load_json(path)
+def _entries_from_json(path: Path, problems: list[str] | None = None) -> list[dict]:
+    problems = problems if problems is not None else []
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except OSError as exc:
+        problems.append(f"could not read {_relative(path)}: {exc}")
+        return []
+    except json.JSONDecodeError as exc:
+        problems.append(f"could not read {_relative(path)} as an assessment: invalid JSON ({exc})")
+        return []
     if not isinstance(data, dict):
+        problems.append(f"could not read {_relative(path)} as an assessment: it is not a JSON object")
         return []
     runs = data.get("runs")
     if isinstance(runs, list):
         entries = []
         for run in runs:
             if not isinstance(run, dict) or not isinstance(run.get("assessment"), dict):
+                problems.append(f"could not read {_relative(path)} as an assessment: a stored run has no assessment")
                 continue
-            stored = run.get("response")
-            response = stored.encode("utf-8") if isinstance(stored, str) else None
             entries.append(
                 {
                     "assessment": run["assessment"],
-                    "response": response,
+                    "response": _decode_response(run.get("response")),
                     "source": path,
                     "manifest": run.get("manifest"),
                 }
             )
         return entries
     if isinstance(data.get("assessment"), dict):
-        stored = data.get("response")
-        response = stored.encode("utf-8") if isinstance(stored, str) else None
         return [
             {
                 "assessment": data["assessment"],
-                "response": response,
+                "response": _decode_response(data.get("response")),
                 "source": path,
                 "manifest": data.get("manifest"),
             }
         ]
     if isinstance(data.get("criteria"), dict) and "case_id" in data:
         return [_entry_from_assessment(data, None, path)]
+    problems.append(f"could not read {_relative(path)} as an assessment: it holds no assessment")
     return []
 
 
-def _entries_in_dir(path: Path) -> list[dict]:
+def _entries_in_dir(path: Path, problems: list[str] | None = None) -> list[dict]:
+    problems = problems if problems is not None else []
     assessment = path / "assessment.json"
     if assessment.is_file():
-        data = _load_json(assessment)
-        if isinstance(data, dict):
-            response_file = path / "response.md"
-            response = response_file.read_bytes() if response_file.is_file() else None
-            return [
-                {
-                    "assessment": data,
-                    "response": response,
-                    "source": path,
-                    "manifest": _load_json(path / "manifest.json"),
-                }
-            ]
-        return []
+        try:
+            data = json.loads(assessment.read_text(encoding="utf-8"))
+        except OSError as exc:
+            problems.append(f"could not read {_relative(assessment)}: {exc}")
+            return []
+        except json.JSONDecodeError as exc:
+            problems.append(f"could not read {_relative(assessment)} as an assessment: invalid JSON ({exc})")
+            return []
+        if not isinstance(data, dict):
+            problems.append(f"could not read {_relative(assessment)} as an assessment: it is not a JSON object")
+            return []
+        response_file = path / "response.md"
+        response = response_file.read_bytes() if response_file.is_file() else None
+        return [
+            {
+                "assessment": data,
+                "response": response,
+                "source": path,
+                "manifest": _load_json(path / "manifest.json"),
+            }
+        ]
     entries: list[dict] = []
     for child in sorted(path.iterdir()):
         if child.is_dir():
-            entries.extend(_entries_in_dir(child))
+            entries.extend(_entries_in_dir(child, problems))
         elif child.suffix == ".json":
-            entries.extend(_entries_from_json(child))
+            entries.extend(_entries_from_json(child, problems))
     return entries
 
 
 def entries_at(path: Path) -> list[dict]:
+    """Assessments stored at a path, ignoring files that cannot be read."""
+    return _entries_at(path, [])
+
+
+def _entries_at(path: Path, problems: list[str]) -> list[dict]:
     if path.is_dir():
-        return _entries_in_dir(path)
-    return _entries_from_json(path)
+        return _entries_in_dir(path, problems)
+    return _entries_from_json(path, problems)
 
 
 def triggered_flags(review: dict) -> list[str]:
@@ -543,15 +675,20 @@ def build_manifest(review: dict, total: int, maximum: int, passed: bool, date: s
 # --------------------------------------------------------------------------- #
 def command_report(paths: list[Path], catalog: dict[str, dict]) -> int:
     entries: list[dict] = []
+    unreadable: list[str] = []
     for path in paths:
-        entries.extend(entries_at(path))
+        entries.extend(_entries_at(path, unreadable))
     if not entries:
         print("No assessments found")
+        for problem in unreadable:
+            print(f"Warning: {problem}")
         return 1
     rows: list[tuple[str, str, str, str, str]] = []
     problems: list[str] = []
     failures = 0
     unverified = 0
+    drifted = 0
+    current_skill = skill_digest()
     for entry in entries:
         review = entry["assessment"]
         case_id = review.get("case_id")
@@ -560,6 +697,27 @@ def command_report(paths: list[Path], catalog: dict[str, dict]) -> int:
             failures += 1
             problems.append(f"{case_id}: unknown case")
             rows.append((str(case_id), str(review.get("route")), "-", "FAIL", "-"))
+            continue
+        manifest = entry.get("manifest")
+        manifest = manifest if isinstance(manifest, dict) else {}
+        stored = _stored_verdict(manifest, review, current_skill)
+        if stored is not None:
+            # The run was scored against a different skill revision, so it is
+            # reported with the verdict it was given. Re-scoring it against
+            # today's skill would only report the skill edit, not the run.
+            drifted += 1
+            passed, total, maximum = stored
+            if not passed:
+                failures += 1
+            rows.append(
+                (
+                    str(case_id),
+                    str(review.get("route")),
+                    f"{total}/{maximum}",
+                    "PASS" if passed else "FAIL",
+                    ", ".join(triggered_flags(review)) or "none",
+                )
+            )
             continue
         if entry.get("response") is None:
             unverified += 1
@@ -584,12 +742,44 @@ def command_report(paths: list[Path], catalog: dict[str, dict]) -> int:
     if unverified:
         print()
         print(f"Note: {unverified} assessment(s) had no response copy, so the response hash was not re-verified.")
+    if drifted:
+        print()
+        print(f"Note: {drifted} assessment(s) were scored against a different skill revision.")
     if problems:
         print()
         print("Problems:")
         for problem in problems:
             print(f"- {problem}")
-    return 1 if failures else 0
+    if unreadable:
+        print()
+        print("Warnings:")
+        for problem in unreadable:
+            print(f"- {problem}")
+        print("A file that cannot be read as an assessment fails the gate: a truncated")
+        print("baseline must never pass silently.")
+    return 1 if failures or unreadable else 0
+
+
+def _stored_verdict(manifest: dict, review: dict, current_skill: str) -> tuple[bool, int, int] | None:
+    """The verdict a stored run was given, when it cannot be re-scored.
+
+    A run stores the skill revision it was scored against. When that revision
+    is no longer the one in the working tree, the run cannot be re-scored
+    without reporting the skill edit rather than the run, so the stored
+    ``passed``, ``total`` and ``maximum`` are used instead. ``None`` means the
+    run must be scored against the current skill.
+    """
+    skill = manifest.get("skill_sha256")
+    if not isinstance(skill, str) or not skill.strip():
+        skill = (review.get("run_manifest") or {}).get("skill_sha256")
+    if not isinstance(skill, str) or not skill.strip() or skill == current_skill:
+        return None
+    passed = manifest.get("passed")
+    total = manifest.get("total")
+    maximum = manifest.get("maximum")
+    if not isinstance(passed, bool) or not isinstance(total, int) or not isinstance(maximum, int):
+        return None
+    return passed, total, maximum
 
 
 def _load_review_for_case(path: Path, catalog: dict[str, dict]) -> tuple[dict | None, dict | None]:
@@ -605,52 +795,114 @@ def _load_review_for_case(path: Path, catalog: dict[str, dict]) -> tuple[dict | 
     return review, case
 
 
-def command_baseline(assessment: Path, response: Path, catalog: dict[str, dict], date: str) -> int:
+def _result_file(date: str, case_id: str, route: str) -> tuple[Path, str | None]:
+    """The results file that holds a run, with every name component sanitised.
+
+    ``date``, ``case_id`` and ``route`` come from an assessment a reviewer
+    wrote, so they are untrusted: each one is reduced to a single safe path
+    component and the resolved file is checked to be inside the results
+    directory before anything is written.
+    """
+    parts = {"date": date, "case": case_id, "route": route}
+    safe = {name: _safe_name(value) for name, value in parts.items()}
+    for name, value in parts.items():
+        if safe[name] != value:
+            print(f"note: {name} {value!r} was sanitised to {safe[name]!r} in the result file name")
+    target = RESULTS / f"{safe['date']}-{safe['case']}-{safe['route']}.json"
+    if not _within(RESULTS, target):
+        return target, f"error: refusing to write outside the results directory: {target}"
+    return target, None
+
+
+def command_baseline(
+    assessment: Path,
+    response: Path,
+    catalog: dict[str, dict],
+    date: str,
+    allow_fail: bool = False,
+) -> int:
     review, case = _load_review_for_case(assessment, catalog)
     if review is None or case is None:
         return 1
     case_id = review.get("case_id")
-    route = review.get("route", "automatic")
-    passed, errors, total, maximum = evaluate_review(case, review, response.read_bytes())
+    route = review.get("route")
+    route_name = route if isinstance(route, str) and route else "automatic"
+    raw = response.read_bytes()
+    passed, errors, total, maximum = evaluate_review(case, review, raw)
     manifest = build_manifest(review, total, maximum, passed, date)
     entry = {
         "manifest": manifest,
         "assessment": review,
-        "response": _read_text(response),
+        "response": _encode_response(raw),
     }
-    target = RESULTS / f"{date}-{case_id}-{route}.json"
+    target, problem = _result_file(date, str(case_id), route_name)
+    if problem:
+        print(problem)
+        return 1
     stored = _load_json(target)
     runs: list = []
     if isinstance(stored, dict) and isinstance(stored.get("runs"), list):
         runs = [run for run in stored["runs"] if isinstance(run, dict)]
     runs.append(entry)
-    _write_text(target, json.dumps({"case_id": case_id, "route": route, "runs": runs}, indent=2) + "\n")
+    _write_text(target, json.dumps({"case_id": case_id, "route": route_name, "runs": runs}, indent=2) + "\n")
     print(f"{case_id}: {'PASS' if passed else 'NEEDS REVIEW'} ({total}/{maximum})")
     for error in errors:
         print(f"- {error}")
     print(f"baseline written to {_display_path(target)}")
-    return 0
+    return 0 if passed or allow_fail else 1
 
 
-def command_archive(assessment: Path, response: Path, catalog: dict[str, dict], date: str, out: Path | None) -> int:
+def command_archive(
+    assessment: Path,
+    response: Path,
+    catalog: dict[str, dict],
+    date: str,
+    out: Path | None,
+    allow_fail: bool = False,
+) -> int:
     review, case = _load_review_for_case(assessment, catalog)
     if review is None or case is None:
         return 1
     case_id = review.get("case_id")
-    route = review.get("route", "automatic")
-    passed, errors, total, maximum = evaluate_review(case, review, response.read_bytes())
+    route = review.get("route")
+    raw = response.read_bytes()
+    passed, errors, total, maximum = evaluate_review(case, review, raw)
+    if not isinstance(route, str) or route not in allowed_routes(case):
+        print(f"error: assessment route {route!r} is not defined for case {case_id}")
+        print(f"{case_id}: {'PASS' if passed else 'NEEDS REVIEW'} ({total}/{maximum})")
+        for error in errors:
+            print(f"- {error}")
+        return 1
     manifest = build_manifest(review, total, maximum, passed, date)
-    directory = out or (RESULTS / "archive" / f"{date}-{case_id}-{route}")
-    directory.mkdir(parents=True, exist_ok=True)
-    _write_text(directory / "prompt.md", normalised_prompt(case, route))
-    (directory / "response.md").write_bytes(response.read_bytes())
-    _write_text(directory / "assessment.json", json.dumps(review, indent=2) + "\n")
-    _write_text(directory / "manifest.json", json.dumps(manifest, indent=2) + "\n")
+    if out is not None:
+        if out.exists() and not out.is_dir():
+            print(f"error: archive destination exists and is not a directory: {out}")
+            return 1
+        directory = out
+    else:
+        name = f"{_safe_name(date)}-{_safe_name(str(case_id))}-{_safe_name(route)}"
+        directory = RESULTS / "archive" / name
+        if not _within(RESULTS, directory):
+            print(f"error: refusing to write outside the results directory: {directory}")
+            return 1
+    try:
+        directory.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        print(f"error: cannot create the archive directory {directory}: {exc}")
+        return 1
+    try:
+        _write_text(directory / "prompt.md", normalised_prompt(case, route))
+        (directory / "response.md").write_bytes(raw)
+        _write_text(directory / "assessment.json", json.dumps(review, indent=2) + "\n")
+        _write_text(directory / "manifest.json", json.dumps(manifest, indent=2) + "\n")
+    except OSError as exc:
+        print(f"error: cannot write the archive to {directory}: {exc}")
+        return 1
     print(f"{case_id}: {'PASS' if passed else 'NEEDS REVIEW'} ({total}/{maximum})")
     for error in errors:
         print(f"- {error}")
     print(f"archive written to {directory}")
-    return 0
+    return 0 if passed or allow_fail else 1
 
 
 def _select_entry(path: Path) -> dict | None:
@@ -670,8 +922,13 @@ def command_diff(old: Path, new: Path, catalog: dict[str, dict]) -> int:
         return 1
     old_review = old_entry["assessment"]
     new_review = new_entry["assessment"]
-    case = catalog.get(old_review.get("case_id")) or catalog.get(new_review.get("case_id"))
-    print(f"case: {old_review.get('case_id')}  route: {old_review.get('route')}")
+    old_case_id = old_review.get("case_id")
+    new_case_id = new_review.get("case_id")
+    if old_case_id and new_case_id and old_case_id != new_case_id:
+        print(f"Cannot diff two different cases: {old_case_id} and {new_case_id}")
+        return 1
+    case = catalog.get(old_case_id) or catalog.get(new_case_id)
+    print(f"case: {old_case_id}  route: {old_review.get('route')}")
     old_manifest = old_entry.get("manifest") or {}
     new_manifest = new_entry.get("manifest") or {}
     old_skill = old_manifest.get("skill_sha256") or (old_review.get("run_manifest") or {}).get("skill_sha256")
@@ -705,15 +962,14 @@ def command_diff(old: Path, new: Path, catalog: dict[str, dict]) -> int:
         if old_state != new_state:
             label = new_flag.get("id") or old_flag.get("id") or str(index + 1)
             print(f"  flag {label:<15} {old_state} -> {new_state}")
-    regressed = False
+    regressions: list[str] = []
     if isinstance(old_total, int) and isinstance(new_total, int) and new_total < old_total:
-        regressed = True
+        regressions.append("REGRESSION: the new run scores lower than the old run")
     if _passed(case, old_entry) is True and _passed(case, new_entry) is False:
-        regressed = True
-    if regressed:
-        print("REGRESSION: the new run scores lower than the old run")
-        return 1
-    return 0
+        regressions.append("REGRESSION: the new run does not pass where the old run passed")
+    for regression in regressions:
+        print(regression)
+    return 1 if regressions else 0
 
 
 def _totals(case: dict | None, entry: dict) -> tuple[int | None, int | None]:
@@ -781,6 +1037,11 @@ def main() -> int:
         sub.add_argument("assessment", type=Path)
         sub.add_argument("response", type=Path)
         sub.add_argument("--date", default=datetime.now(timezone.utc).date().isoformat())
+        sub.add_argument(
+            "--allow-fail",
+            action="store_true",
+            help="Store the run and exit 0 even when the review did not pass",
+        )
         if command == "archive":
             sub.add_argument("--out", type=Path, default=None)
     comparison = commands.add_parser("diff")
@@ -810,7 +1071,9 @@ def main() -> int:
         if args.route != "automatic" and args.route not in (case.get("reference_comparison") or {}):
             parser.error(f"Case {args.case_id} has no {args.route} route")
         if args.command == "prompt":
-            print(prompt(case, args.route))
+            # The prompt is printed without a trailing newline so the bytes on
+            # screen are the bytes the prompt digest covers.
+            print(prompt(case, args.route), end="")
         else:
             if not args.response.is_file():
                 parser.error(f"Response file does not exist: {args.response}")
@@ -825,8 +1088,8 @@ def main() -> int:
         if not args.assessment.is_file() or not args.response.is_file():
             parser.error("Assessment and response files must both exist")
         if args.command == "baseline":
-            return command_baseline(args.assessment, args.response, catalog, args.date)
-        return command_archive(args.assessment, args.response, catalog, args.date, args.out)
+            return command_baseline(args.assessment, args.response, catalog, args.date, args.allow_fail)
+        return command_archive(args.assessment, args.response, catalog, args.date, args.out, args.allow_fail)
     if args.command == "diff":
         if not args.old.exists() or not args.new.exists():
             parser.error("Both runs must exist")

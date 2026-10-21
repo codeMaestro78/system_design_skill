@@ -1,5 +1,7 @@
 # Architecture testing, migration, and evolution
 
+Use this for: choosing what proves a design works and how to change it without breaking it - the verification portfolio, expand-and-contract migrations, schema and contract evolution, and fitness functions.
+
 ## Verification portfolio
 
 Tie tests to requirements, risks, and failure modes. Use the lowest-cost test that gives credible evidence, but do not substitute unit tests for cross-boundary behavior.

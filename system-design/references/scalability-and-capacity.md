@@ -12,7 +12,9 @@ Sources: [Google SRE](sources.md#sre-reliability-operations), [AWS Well-Architec
 - Concurrent in-flight work ≈ arrival rate × mean time in system (Little's Law). It is an average, not a safe upper bound; add tail latency and burstiness.
 - Storage ≈ writes/day × bytes/record × retention, plus indexes, replicas, backups, and derived copies. Network bytes/s ≈ requests/s × payload bytes × fan-out.
 - Assign a latency budget to the critical path and measure p95/p99, not the median. Check pools, locks, indexes, N+1 queries, hot keys, and write amplification before adding replicas.
-- Horizontal scaling works only when state, coordination, and dependencies permit it. Vertical headroom is finite. Autoscaling has reaction delay, warm-up, and quota limits.
+- Horizontal scaling works only when state, coordination, and dependencies permit it. Vertical headroom is finite. Autoscaling has reaction delay, warm-up, and quota limits, and it does not fix serial work or a saturated dependency. Size degraded capacity after losing an instance, zone, region, dependency, or replica.
+- Allocate the end-to-end budget across the critical path: parallel calls cost the max of the branches, sequential dependencies add, and each downstream call inherits the remaining deadline so work cannot outlive the request without an explicit asynchronous contract.
+- Derive cache working set and hit rate from actual locality and invalidation behavior, never from total dataset size alone.
 - A queue does not fix insufficient service capacity; it moves pressure into backlog and latency. Watch queue age and estimate drain time, not just depth.
 - Estimate cost drivers (compute duration, provisioned capacity, storage, requests, transfer, observability, on-call) and verify current provider prices before quoting.
 - If the estimate is uncertain, report the break point at which a different design becomes justified.
@@ -21,4 +23,4 @@ Sources: [Google SRE](sources.md#sre-reliability-operations), [AWS Well-Architec
 
 - Full estimation method, latency budgets, and load testing: [requirements and capacity](requirements-and-capacity.md).
 - Patterns that shift load (queues, caches, bulkheads): [pattern catalog](pattern-catalog.md).
-- Operating capacity and cost in production: [reliability and operations](reliability-operations.md).
+- Operating capacity and cost in production: [reliability, performance, and production operations](reliability-operations.md).

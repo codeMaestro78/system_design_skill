@@ -1,5 +1,9 @@
 # AI and agent system architecture
 
+Use this for: designing an AI feature or agent workflow — topology, tool contracts, agent loop control, retrieval and memory, evaluation, and multi-agent orchestration. This file is the canonical guide for AI and agent system design in the reference set.
+
+Sources: [OWASP LLM risks](sources.md#ai-and-agent-systems), [OpenAI agent guidance](sources.md#ai-and-agent-systems), [NIST AI RMF](sources.md#ai-and-agent-systems).
+
 AI features inherit distributed-systems failure modes and add probabilistic output, model/provider dependence, prompt/tool security, evaluation, and variable cost. Treat model calls as external services and agents as constrained application components, not trusted peers.
 
 ## Requirements and topology
@@ -81,7 +85,7 @@ Keep a versioned, privacy-reviewed evaluation set from representative tasks and 
 
 Trace model and tool calls with redaction; record model/prompt/tool versions, token counts, latency, retries, policy decisions, and outcome labels. Avoid storing raw prompts/outputs by default if they contain personal or confidential data. Set retention and access controls. Observe loops, repeated tool calls, queue age, spend spikes, and rate limits.
 
-## Evaluation method
+### Evaluation method
 
 Score trajectories, not only final answers: right tool, right arguments, safe ordering of side effects, no redundant calls. An answer reached unsafely is not the same result as the same answer reached safely.
 
@@ -93,7 +97,7 @@ If an LLM judges the output, validate the judge against human-labelled examples,
 
 Use multiple agents only when specialization, parallel independent work, or review materially improves outcomes. A coordinator needs bounded delegation, typed task inputs/outputs, budgets, timeouts, cancellation, shared-state ownership, conflict resolution, provenance, and final validation. Prevent duplicate side effects and runaway delegation. Do not treat agent agreement as independent evidence when agents share models, sources, or hidden context. Keep deterministic checks outside the model wherever possible.
 
-## Multi-agent topologies
+### Multi-agent topologies
 
 Name the topology, because each fails differently:
 

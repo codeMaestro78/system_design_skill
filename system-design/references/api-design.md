@@ -1,5 +1,7 @@
 # API and contract design
 
+Use this for: designing an interface another team or an external client consumes - resource shape, versioning, idempotency, pagination, error contracts, and rate limits.
+
 ## Begin with consumers and semantics
 
 Identify callers (browser, mobile, partner, internal service, batch, webhook), user journeys, resource/command model, authorization context, traffic, compatibility period, and transport requirements. Keep public contracts separate from internal database schemas. Define behavior, not just JSON shape.
