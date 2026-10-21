@@ -15,24 +15,23 @@ The mark is the work of DT-wanf, the owner of that repository. That repository
 carries no licence file, so it granted no explicit permission for the mark to be
 redistributed, and the copy in this repository was made without attribution.
 
-The mark has been removed from this repository's working tree. It is no longer
-present in `system-design/assets/` and is not included in any archive built by
-`scripts/package.py`.
+The mark has been removed from this repository. It is no longer present in
+`system-design/assets/`, it is not included in any archive built by
+`scripts/package.py`, and the file at `system-design/assets/icon.svg` on the
+default branch of https://github.com/codeMaestro78/system_design_skill now
+hashes to `503f543a8b9ea801ff78c710531fad5f33e416d6e53bd042e49d71e7814d88eb`.
 
-The copy published on the default branch of
-https://github.com/codeMaestro78/system_design_skill has not yet been replaced.
-Until it is, installing from that URL still delivers the mark. Push the current
-tree, then confirm the file at `system-design/assets/icon.svg` on the default
-branch no longer hashes to
-`e9301497fa98ef56aaca7ede0857b9a18dc06c34040f0679c609a6bf49b1d38b`.
+Commits before `909b9bd` on the default branch still contain the borrowed file,
+so anyone who cloned the repository before that commit has a copy of the mark
+in their history. The replacement is in `909b9bd` and later.
 
 Current artwork
 ---------------
 
-The artwork now in `system-design/assets/` — `icon.svg`, `icon-mono.svg`,
-`logo.svg`, and `logo-512.png` — is original work derived from this
-repository's own logo, and
-is covered by this repository's MIT licence. See `LICENSE`.
+The artwork now in `system-design/assets/` - `icon.svg`, `icon-mono.svg`,
+`logo.svg`, and `logo-512.png` - is original work derived from this
+repository's own logo, and is covered by this repository's MIT licence.
+See `LICENSE`.
 
 This notice applies to the artwork only. The references, templates, scripts, and
 evaluation material in this repository are original work under the same licence.
