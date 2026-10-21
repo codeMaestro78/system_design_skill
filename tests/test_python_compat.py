@@ -19,11 +19,7 @@ MIN_PYTHON = (3, 9)
 
 
 def python_files() -> list[Path]:
-    return sorted(
-        path
-        for path in ROOT.rglob("*.py")
-        if ".git" not in path.parts and "__pycache__" not in path.parts
-    )
+    return sorted(path for path in ROOT.rglob("*.py") if ".git" not in path.parts and "__pycache__" not in path.parts)
 
 
 def annotation_nodes(tree: ast.AST) -> list[ast.expr]:
@@ -37,11 +33,7 @@ def annotation_nodes(tree: ast.AST) -> list[ast.expr]:
     for node in ast.walk(tree):
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             arguments = node.args
-            for argument in (
-                list(arguments.posonlyargs)
-                + list(arguments.args)
-                + list(arguments.kwonlyargs)
-            ):
+            for argument in list(arguments.posonlyargs) + list(arguments.args) + list(arguments.kwonlyargs):
                 if argument.annotation is not None:
                     found.append(argument.annotation)
             if arguments.vararg is not None and arguments.vararg.annotation is not None:
