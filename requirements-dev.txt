@@ -8,4 +8,4 @@
 # separate, non-optional step; this file adds the advisory tooling.
 PyYAML==6.0.3
 ruff==0.17.1
-coverage==7.10.7
+coverage==7.17.0
